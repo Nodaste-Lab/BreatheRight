@@ -33,10 +33,18 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "44b52b9e-4c00-4da6-be27-53ac3f6f2186"
+      }
+    },
+    "owner": "benogren"
   }
 }

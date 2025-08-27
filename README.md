@@ -1,50 +1,59 @@
-# Welcome to your Expo app 👋
+# BreathRight
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Mobile-first air quality management app delivering real-time AQI and pollen data alerts for health-conscious families.
 
-## Get started
+## 🎯 Overview
 
-1. Install dependencies
+BreathRight helps parents, outdoor enthusiasts, and health-conscious individuals make informed decisions about outdoor activities through hyper-local air quality monitoring, predictive health alerts, and delightful kawaii character visualizations.
 
-   ```bash
-   npm install
-   ```
+## 📚 Documentation
 
-2. Start the app
+- [Technical Specification](./docs/specs/technical-spec.md) - Complete technical implementation guide
+- [Product Requirements](./docs/specs/product-requirements.md) - Detailed product vision and requirements
+- [API Research](./docs/specs/api-research.md) - Comprehensive API analysis and recommendations
+- [Setup Guide](./docs/SETUP.md) - Development environment setup
+- [Development Guide](./docs/DEVELOPMENT.md) - Development workflow and best practices
+- [Architecture Decisions](./docs/architecture/decisions.md) - Key technical decisions and rationale
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## 🚀 Quick Start
 
 ```bash
-npm run reset-project
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env.local
+# Edit .env.local with your Supabase credentials
+
+# Start development server
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 🏗️ Tech Stack
 
-## Learn more
+- **Frontend**: React Native + Expo
+- **Styling**: NativeWind (TailwindCSS)
+- **Backend**: Supabase
+- **APIs**: Google Maps Platform (Air Quality, Pollen, Weather)
+- **State**: Zustand
+- **Push Notifications**: Expo Push Service
 
-To learn more about developing your project with Expo, look at the following resources:
+## 📱 Features (MVP)
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- ✅ Real-time AQI display with kawaii character reactions
+- ✅ Pollen count readings with health indicators
+- ✅ Lightning risk assessment
+- ✅ Multi-location support (up to 3 locations)
+- ✅ Daily push notifications
+- ✅ User profiles with health considerations
+- ✅ Dark mode support
 
-## Join the community
+## 🗓️ Project Status
 
-Join our community of developers creating universal apps.
+**Current Phase**: MVP Development - Phase 1 of 6
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+See [CHANGELOG.md](./CHANGELOG.md) for detailed progress.
+
+## 📄 License
+
+Proprietary - All rights reserved
