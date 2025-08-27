@@ -194,51 +194,58 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
 
       if (locationError) throw locationError;
 
-      // For now, we'll create mock data since we need API keys for real services
-      // In production, you'd call real APIs like OpenWeatherMap, IQAir, etc.
-      const mockAQI: AQIData = {
-        aqi: Math.floor(Math.random() * 150) + 1,
-        level: 'Good',
-        pollutants: {
-          pm25: Math.floor(Math.random() * 50) + 1,
-          pm10: Math.floor(Math.random() * 80) + 1,
-          o3: Math.floor(Math.random() * 100) + 1,
-          no2: Math.floor(Math.random() * 60) + 1,
-          so2: Math.floor(Math.random() * 40) + 1,
-          co: Math.floor(Math.random() * 30) + 1,
-        },
-        timestamp: new Date().toISOString(),
-      };
+      // Import API functions
+      const { fetchGoogleAirQuality } = await import('../lib/api/google-air-quality');
+      const { fetchPollenData } = await import('../lib/api/pollen');
 
-      // Determine AQI level based on value
-      if (mockAQI.aqi <= 50) mockAQI.level = 'Good';
-      else if (mockAQI.aqi <= 100) mockAQI.level = 'Moderate';
-      else if (mockAQI.aqi <= 150) mockAQI.level = 'Unhealthy for Sensitive Groups';
-      else if (mockAQI.aqi <= 200) mockAQI.level = 'Unhealthy';
-      else if (mockAQI.aqi <= 300) mockAQI.level = 'Very Unhealthy';
-      else mockAQI.level = 'Hazardous';
+      // Fetch real AQI and pollen data
+      const [aqiData, pollenData] = await Promise.allSettled([
+        fetchGoogleAirQuality(location.latitude, location.longitude),
+        fetchPollenData(location.latitude, location.longitude),
+      ]);
 
-      const mockPollen: PollenData = {
-        overall: Math.floor(Math.random() * 10) + 1,
-        tree: Math.floor(Math.random() * 10) + 1,
-        grass: Math.floor(Math.random() * 10) + 1,
-        weed: Math.floor(Math.random() * 10) + 1,
-        level: 'Low',
-        timestamp: new Date().toISOString(),
-      };
+      // Handle AQI data (with fallback)
+      let aqi: AQIData;
+      if (aqiData.status === 'fulfilled') {
+        aqi = aqiData.value;
+      } else {
+        console.warn('Failed to fetch AQI data, using fallback:', aqiData.reason);
+        aqi = {
+          aqi: 50,
+          level: 'Good',
+          pollutants: {
+            pm25: 10,
+            pm10: 20,
+            o3: 60,
+            no2: 15,
+            so2: 5,
+            co: 1,
+          },
+          timestamp: new Date().toISOString(),
+        };
+      }
 
-      // Determine pollen level
-      if (mockPollen.overall <= 2) mockPollen.level = 'Low';
-      else if (mockPollen.overall <= 4) mockPollen.level = 'Low-Medium';
-      else if (mockPollen.overall <= 6) mockPollen.level = 'Medium';
-      else if (mockPollen.overall <= 8) mockPollen.level = 'Medium-High';
-      else mockPollen.level = 'High';
+      // Handle pollen data (with fallback)
+      let pollen: PollenData;
+      if (pollenData.status === 'fulfilled') {
+        pollen = pollenData.value;
+      } else {
+        console.warn('Failed to fetch pollen data, using fallback:', pollenData.reason);
+        pollen = {
+          overall: 3,
+          tree: 3,
+          grass: 2,
+          weed: 4,
+          level: 'Low-Medium',
+          timestamp: new Date().toISOString(),
+        };
+      }
 
       set({ 
         currentLocation: {
           location,
-          aqi: mockAQI,
-          pollen: mockPollen,
+          aqi,
+          pollen,
         },
         loading: false 
       });

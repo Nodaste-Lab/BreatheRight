@@ -34,8 +34,15 @@ export interface PollenData {
   timestamp: string;
 }
 
+export interface LightningData {
+  probability: number; // 0-100 percentage
+  level: 'Low' | 'Moderate' | 'High';
+  timestamp: string;
+}
+
 export interface LocationData {
   location: Location;
   aqi: AQIData | null;
   pollen: PollenData | null;
+  lightning?: LightningData | null;
 }

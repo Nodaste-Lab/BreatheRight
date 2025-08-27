@@ -1,6 +1,6 @@
 module.exports = {
   preset: 'react-native',
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js', '@testing-library/jest-native/extend-expect'],
   testMatch: ['**/__tests__/**/*.(ts|tsx|js)', '**/*.(test|spec).(ts|tsx|js)'],
   collectCoverageFrom: [
     'app/**/*.{ts,tsx}',
@@ -23,6 +23,6 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/$1',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|expo|@expo|@supabase|zustand)/)',
+    'node_modules/(?!(react-native|@react-native|expo|@expo|@supabase|@expo-google-fonts)/)',
   ],
 };

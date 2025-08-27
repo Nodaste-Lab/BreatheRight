@@ -8,7 +8,8 @@ BreatheRight is a React Native mobile application that helps users monitor air q
 ### Technology Stack
 - **Framework**: React Native with Expo (~53.0.22)
 - **Language**: TypeScript (~5.8.3)
-- **Styling**: NativeWind (TailwindCSS for React Native) ^4.1.23
+- **Styling**: StyleSheet (migrated from NativeWind for better compatibility)
+- **Fonts**: Google Fonts (Nunito Sans + Baloo 2) via @expo-google-fonts
 - **State Management**: Zustand ^5.0.8
 - **Backend**: Supabase ^2.56.0
 - **Forms**: React Hook Form ^7.62.0 with Zod validation ^4.1.3
@@ -35,7 +36,8 @@ mobile/
 │   │   └── Input.tsx
 │   ├── location/                 # Location-related components
 │   │   ├── AddLocationModal.tsx
-│   │   └── LocationCard.tsx
+│   │   ├── LocationCard.tsx
+│   │   └── LocationFeedCard.tsx  # NEW: Feed card component
 │   └── air-quality/              # Air quality display components
 │       ├── AQICard.tsx
 │       └── PollenCard.tsx
@@ -46,10 +48,14 @@ mobile/
 │   ├── auth.ts
 │   └── location.ts
 ├── lib/                          # External service integrations
-│   └── supabase/
-│       ├── client.ts
-│       └── migrations/
-│           └── locations.sql
+│   ├── supabase/
+│   │   ├── client.ts
+│   │   └── migrations/
+│   │       └── locations.sql
+│   ├── api/                      # NEW: API integrations
+│   │   ├── google-air-quality.ts # Google Maps Air Quality API
+│   │   └── pollen.ts             # Pollen data API
+│   └── fonts.ts                  # NEW: Google Fonts configuration
 └── __tests__/                    # Test files
     └── basic.test.ts
 ```
@@ -81,6 +87,7 @@ mobile/
 - OpenStreetMap Nominatim API for geocoding (free alternative to Google Maps)
 - Supabase database with locations table
 - Real-time location data fetching
+- Location feed displaying all user locations with current conditions
 
 ### 🌬️ Air Quality Display
 - **AQI Visualization**: Color-coded Air Quality Index display
@@ -95,7 +102,8 @@ mobile/
 - **Seasonal Awareness**: Level classifications from Low to High
 
 **Implementation Details**:
-- Currently uses mock data generation (production would integrate with weather APIs)
+- **NEW**: Google Maps Platform Air Quality API integration for real AQI data
+- Fallback to mock data when API calls fail
 - Responsive card-based UI design
 - Time-stamped data with last update indicators
 
@@ -110,6 +118,30 @@ mobile/
 - Location store: CRUD operations, GPS handling, data fetching
 - UI Components: Modal interactions, card displays, form validation
 - Error Handling: Network failures, permission denials, validation errors
+
+### 🎨 Design System & UI/UX
+- **Google Fonts Integration**: Nunito Sans for body copy, Baloo 2 for headlines
+- **Consistent Styling**: Migrated from NativeWind to StyleSheet for better performance
+- **Location Feed Interface**: Card-based design showing AQI, Pollen, and Lightning scores
+- **Interactive Navigation**: Location cards navigate to detailed view screens
+- **Color-coded Health Indicators**: Visual representation of air quality levels
+
+**Implementation Details**:
+- Custom font loading with @expo-google-fonts packages
+- Dynamic styling based on data values (AQI colors, pollen levels)
+- Responsive design patterns for different screen sizes
+- Accessibility considerations with proper contrast ratios
+
+### 🧭 Navigation & User Flow
+- **Location Details Screen**: Deep dive into individual location data
+- **Dynamic Routing**: Uses Expo Router with [id] parameters for location details
+- **Feed-to-Details Flow**: Seamless navigation from overview to detailed view
+- **Back Navigation**: Proper header navigation with back buttons
+
+**Implementation Details**:
+- Expo Router with dynamic routing (`/location/[id]`)
+- Stack navigation with custom headers
+- State management across navigation boundaries
 
 ## Database Schema
 
@@ -149,17 +181,22 @@ locations (
 1. **Supabase**: Authentication, database, real-time subscriptions
 2. **OpenStreetMap Nominatim**: Free geocoding service for address lookup
 3. **Expo Location**: GPS coordinate access with permission management
+4. **Google Maps Platform Air Quality API**: Real-time AQI and pollutant data (NEW)
+5. **Google Fonts**: Nunito Sans and Baloo 2 font families (NEW)
 
 ### Production API Requirements
-For production deployment, integrate with:
-1. **Air Quality APIs**:
-   - OpenWeatherMap Air Pollution API
-   - IQAir API  
-   - EPA AirNow API
-2. **Pollen APIs**:
+For production deployment, expand with:
+1. **Additional Air Quality APIs** (Google Maps already integrated):
+   - IQAir API for backup/validation
+   - EPA AirNow API for US-specific data
+   - OpenWeatherMap Air Pollution API for international coverage
+2. **Pollen APIs** (currently mock data):
    - Weather.gov API
    - AccuWeather API
    - Custom weather service providers
+3. **Lightning/Weather APIs** (currently mock data):
+   - National Weather Service API
+   - Weather.gov Storm Prediction API
 
 ## Performance Considerations
 
@@ -219,8 +256,11 @@ For production deployment, integrate with:
 
 ## Next Steps & Roadmap
 
-### Phase 1: Core Data Integration (Next)
-- [ ] Replace mock data with real API integrations
+### Phase 1: Core Data Integration (PARTIALLY COMPLETE)
+- [x] Replace AQI mock data with Google Maps Air Quality API integration
+- [x] Implement real-time air quality data fetching with fallback
+- [ ] Replace pollen mock data with real API integrations 
+- [ ] Replace lightning mock data with weather API integrations
 - [ ] Implement caching strategy for API responses
 - [ ] Add offline data storage capabilities
 - [ ] Implement background data refresh
@@ -259,11 +299,12 @@ For production deployment, integrate with:
 ## Technical Debt & Improvements
 
 ### Known Issues
-1. **Mock Data**: Replace with real API integrations
+1. **Partial Mock Data**: Pollen and Lightning still use mock data (AQI now uses real API)
 2. **Error Boundaries**: Add comprehensive error boundaries
 3. **Loading States**: Improve loading state UX
 4. **Accessibility**: Add screen reader support and accessibility labels
 5. **Internationalization**: Multi-language support
+6. **Test Coverage**: Some store tests need Zustand mocking fixes
 
 ### Code Quality
 - **ESLint Configuration**: Consistent code style enforcement
@@ -273,6 +314,24 @@ For production deployment, integrate with:
 
 ---
 
-*Last Updated: August 27, 2024*  
-*Version: 1.0.0*  
-*Status: MVP Complete - Ready for API Integration*
+*Last Updated: August 27, 2025*  
+*Version: 1.1.0*  
+*Status: MVP+ with Real API Integration - Ready for Enhanced Features*
+
+## Recent Updates (August 27, 2025)
+
+### ✅ Completed Features
+- **Google Maps Air Quality API Integration**: Replaced mock AQI data with real Google Maps Platform API
+- **Location Feed Interface**: Added comprehensive feed showing all user locations with current conditions
+- **Navigation Enhancement**: Dynamic routing to location detail screens with full data breakdown
+- **Design System Upgrade**: Implemented Google Fonts (Nunito Sans + Baloo 2) and migrated to StyleSheet
+- **Test Infrastructure**: Enhanced testing with LocationFeedCard tests and better mocking
+- **Lightning Risk Display**: Added lightning probability tracking and display (mock data)
+- **Multi-Score Display**: Unified display of AQI, Pollen, and Lightning scores in feed cards
+
+### 🔧 Technical Improvements
+- Migrated from NativeWind to StyleSheet for better performance and compatibility
+- Fixed database schema to use `show_in_home` field and `profiles` table references
+- Added comprehensive error handling and fallback systems for API failures
+- Improved font loading and typography system
+- Enhanced component architecture with feed cards and detail screens

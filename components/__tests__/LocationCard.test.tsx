@@ -9,8 +9,7 @@ import type { Location } from '../../types/location';
 jest.mock('../../store/location');
 const mockUseLocationStore = useLocationStore as jest.MockedFunction<typeof useLocationStore>;
 
-// Mock Alert
-jest.spyOn(Alert, 'alert');
+// Mock Alert is handled in jest.setup.js
 
 describe('LocationCard', () => {
   const mockLocation: Location = {

@@ -1,19 +1,9 @@
--- Create locations table
-CREATE TABLE IF NOT EXISTS public.locations (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    latitude DOUBLE PRECISION NOT NULL,
-    longitude DOUBLE PRECISION NOT NULL,
-    address TEXT NOT NULL,
-    is_primary BOOLEAN DEFAULT false,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
+-- Note: This table already exists in your database with the correct schema
+-- Only run the index and policy creation parts below
 
--- Create indexes for better performance
+-- Create indexes for better performance (only if they don't exist)
 CREATE INDEX IF NOT EXISTS locations_user_id_idx ON public.locations(user_id);
-CREATE INDEX IF NOT EXISTS locations_user_primary_idx ON public.locations(user_id, is_primary);
+CREATE INDEX IF NOT EXISTS locations_user_home_idx ON public.locations(user_id, show_in_home);
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE public.locations ENABLE ROW LEVEL SECURITY;

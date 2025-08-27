@@ -12,8 +12,7 @@ const mockUseLocationStore = useLocationStore as jest.MockedFunction<typeof useL
 // Mock expo-location
 const mockExpoLocation = ExpoLocation as jest.Mocked<typeof ExpoLocation>;
 
-// Mock Alert
-jest.spyOn(Alert, 'alert');
+// Mock Alert is handled in jest.setup.js
 
 // Mock fetch for geocoding
 const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;

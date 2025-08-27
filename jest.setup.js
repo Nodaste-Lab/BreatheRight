@@ -54,6 +54,31 @@ jest.mock('react-native/Libraries/Alert/Alert', () => ({
   alert: jest.fn(),
 }));
 
+// Mock Expo Vector Icons
+jest.mock('@expo/vector-icons', () => ({
+  Ionicons: 'Ionicons',
+  MaterialIcons: 'MaterialIcons',
+  AntDesign: 'AntDesign',
+}));
+
+// Mock Google Fonts
+jest.mock('@expo-google-fonts/nunito-sans', () => ({
+  useFonts: jest.fn(() => [true, null]),
+  NunitoSans_400Regular: 'NunitoSans_400Regular',
+  NunitoSans_600SemiBold: 'NunitoSans_600SemiBold',
+  NunitoSans_700Bold: 'NunitoSans_700Bold',
+  NunitoSans_800ExtraBold: 'NunitoSans_800ExtraBold',
+}));
+
+jest.mock('@expo-google-fonts/baloo-2', () => ({
+  useFonts: jest.fn(() => [true, null]),
+  Baloo2_400Regular: 'Baloo2_400Regular',
+  Baloo2_500Medium: 'Baloo2_500Medium',
+  Baloo2_600SemiBold: 'Baloo2_600SemiBold',
+  Baloo2_700Bold: 'Baloo2_700Bold',
+  Baloo2_800ExtraBold: 'Baloo2_800ExtraBold',
+}));
+
 // Mock fetch for geocoding
 global.fetch = jest.fn();
 
