@@ -1,58 +1,157 @@
-# BreathRight
+# BreathRight Mobile App
 
-Mobile-first air quality management app delivering real-time AQI and pollen data alerts for health-conscious families.
+React Native implementation of the BreathRight air quality monitoring application.
 
-## 🎯 Overview
+## 📱 Overview
 
-BreathRight helps parents, outdoor enthusiasts, and health-conscious individuals make informed decisions about outdoor activities through hyper-local air quality monitoring, predictive health alerts, and delightful kawaii character visualizations.
+This is the mobile client for BreathRight, built with React Native and Expo. It provides real-time air quality monitoring with kawaii character visualizations, helping families make informed decisions about outdoor activities.
+
+For overall project documentation, see the [root README](../README.md).
 
 ## 📚 Documentation
 
-- [Technical Specification](./docs/specs/technical-spec.md) - Complete technical implementation guide
-- [Product Requirements](./docs/specs/product-requirements.md) - Detailed product vision and requirements
-- [API Research](./docs/specs/api-research.md) - Comprehensive API analysis and recommendations
-- [Setup Guide](./docs/SETUP.md) - Development environment setup
-- [Development Guide](./docs/DEVELOPMENT.md) - Development workflow and best practices
-- [Architecture Decisions](./docs/architecture/decisions.md) - Key technical decisions and rationale
+- [Technical Specification](../docs/specs/technical-spec.md) - Complete technical implementation guide
+- [Product Requirements](../docs/specs/product-requirements.md) - Detailed product vision and requirements
+- [API Research](../docs/specs/api-research.md) - Comprehensive API analysis and recommendations
+- [Setup Guide](../docs/SETUP.md) - Development environment setup
+- [Development Guide](../docs/DEVELOPMENT.md) - Development workflow and best practices
+- [Architecture Decisions](../docs/architecture/decisions.md) - Key technical decisions and rationale
 
 ## 🚀 Quick Start
 
 ```bash
-# Install dependencies
+# From the mobile directory
 npm install
 
 # Set up environment variables
 cp .env.example .env.local
 # Edit .env.local with your Supabase credentials
 
-# Start development server
-npx expo start
+# Start Expo development server
+npm start
+
+# Or run the full stack from root directory
+cd .. && npm run dev
 ```
 
-## 🏗️ Tech Stack
+## 🏗️ Mobile Tech Stack
 
-- **Frontend**: React Native + Expo
-- **Styling**: NativeWind (TailwindCSS)
-- **Backend**: Supabase
-- **APIs**: Google Maps Platform (Air Quality, Pollen, Weather)
-- **State**: Zustand
-- **Push Notifications**: Expo Push Service
+- **Framework**: React Native 0.74+ with Expo SDK 51
+- **Language**: TypeScript
+- **Navigation**: Expo Router (file-based)
+- **Styling**: NativeWind v4 (TailwindCSS)
+- **State Management**: Zustand
+- **Forms**: React Hook Form + Zod
+- **Animations**: React Native Reanimated 3
+- **Icons**: Expo Vector Icons + Custom Kawaii SVGs
 
-## 📱 Features (MVP)
+## 📁 Mobile Project Structure
 
-- ✅ Real-time AQI display with kawaii character reactions
-- ✅ Pollen count readings with health indicators
-- ✅ Lightning risk assessment
-- ✅ Multi-location support (up to 3 locations)
-- ✅ Daily push notifications
-- ✅ User profiles with health considerations
-- ✅ Dark mode support
+```
+mobile/
+├── app/                # Expo Router screens
+│   ├── (auth)/        # Authentication flow
+│   ├── (tabs)/        # Main app tabs
+│   └── _layout.tsx    # Root layout
+├── components/        # Reusable UI components
+├── lib/              # Libraries and utilities
+│   ├── supabase/     # Supabase client
+│   └── api/          # API service layer
+├── store/            # Zustand state stores
+├── types/            # TypeScript types
+├── utils/            # Helper functions
+├── constants/        # App constants
+└── assets/           # Images, fonts, etc.
+```
 
-## 🗓️ Project Status
+## 🔧 Available Scripts
 
-**Current Phase**: MVP Development - Phase 1 of 6
+From the `mobile/` directory:
 
-See [CHANGELOG.md](./CHANGELOG.md) for detailed progress.
+```bash
+# Start development server
+npm start
+
+# Run on iOS simulator
+npm run ios
+
+# Run on Android emulator  
+npm run android
+
+# Run tests
+npm test
+
+# Type check
+npm run type-check
+
+# Lint code
+npm run lint
+```
+
+## 🌍 Environment Variables
+
+Create `.env.local` in the mobile directory:
+
+```bash
+# Supabase Connection
+EXPO_PUBLIC_SUPABASE_URL=http://localhost:54321
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-local-anon-key
+
+# Feature Flags
+EXPO_PUBLIC_ENABLE_ANALYTICS=false
+EXPO_PUBLIC_ENABLE_SENTRY=false
+```
+
+## 📱 Features Implemented
+
+### Phase 1: Foundation ✅
+- [x] Expo TypeScript setup
+- [x] NativeWind configuration
+- [x] Navigation structure
+- [ ] Supabase integration
+
+### Phase 2: Authentication 🚧
+- [ ] Sign up/Sign in screens
+- [ ] Profile management
+- [ ] Protected routes
+
+### Phase 3: Core Features 📋
+- [ ] Home screen with AQI display
+- [ ] Location management
+- [ ] Kawaii character states
+- [ ] Push notifications
+
+## 🧪 Testing
+
+```bash
+# Unit tests
+npm test
+
+# Watch mode
+npm test -- --watch
+
+# Coverage report
+npm test -- --coverage
+```
+
+## 📦 Building
+
+```bash
+# Development build
+eas build --profile development
+
+# Preview build
+eas build --profile preview
+
+# Production build
+eas build --profile production
+```
+
+## 🐛 Debugging
+
+- Press `d` in terminal to open developer menu
+- Press `shift + m` to toggle performance monitor
+- Use React Native Debugger for advanced debugging
 
 ## 📄 License
 
