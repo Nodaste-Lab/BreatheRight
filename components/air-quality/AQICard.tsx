@@ -8,6 +8,10 @@ interface AQICardProps {
 }
 
 export function AQICard({ data }: AQICardProps) {
+  // Check if this is combined data
+  const sources = (data as any)?.sources;
+  const confidence = (data as any)?.confidence;
+  const discrepancy = (data as any)?.discrepancy;
   const getAQIColor = (aqi: number): string => {
     if (aqi <= 50) return '#10b981';  // green-500
     if (aqi <= 100) return '#eab308'; // yellow-500
@@ -37,39 +41,102 @@ export function AQICard({ data }: AQICardProps) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Air Quality Index</Text>
+        <View>
+          <Text style={styles.title}>Air Quality Index</Text>
+          {sources && (
+            <Text style={styles.sourceText}>
+              {(() => {
+                const activeSources = [];
+                if (sources.google) activeSources.push('Google');
+                if (sources.openweather) activeSources.push('OpenWeather');
+                if (sources.waqi) activeSources.push('WAQI');
+                if (sources.purpleair) activeSources.push('PurpleAir');
+                if (sources.airnow) activeSources.push('AirNow');
+                
+                if (activeSources.length === 0) return '';
+                if (activeSources.length === 1) return `📊 ${activeSources[0]}`;
+                if (activeSources.length === 2) return `📊 ${activeSources.join(' + ')}`;
+                if (activeSources.length === 3) return `📊 ${activeSources.join(' + ')}`;
+                if (activeSources.length === 4) return `📊 ${activeSources.join(' + ')}`;
+                return `📊 ${activeSources.join(' + ')}`;
+              })()}
+            </Text>
+          )}
+        </View>
         <Text style={styles.timestamp}>Updated {formatTime(data.timestamp)}</Text>
       </View>
 
       <View style={styles.mainContent}>
-        <View style={[styles.aqiCircle, { backgroundColor: getAQIColor(data.aqi) }]}>
-          <Text style={styles.aqiValue}>{data.aqi}</Text>
+        <View style={[styles.aqiCircle, { backgroundColor: getAQIColor(data.aqi >= 0 ? data.aqi : 0) }]}>
+          <Text style={styles.aqiValue}>{data.aqi >= 0 ? data.aqi : 'N/A'}</Text>
         </View>
         <View style={styles.aqiInfo}>
-          <Text style={[styles.levelText, { color: getAQITextColor(data.aqi) }]}>
-            {data.level}
+          <Text style={[styles.levelText, { color: getAQITextColor(data.aqi >= 0 ? data.aqi : 0) }]}>
+            {data.level !== 'Unknown' ? data.level : 'N/A'}
           </Text>
           <Text style={styles.levelLabel}>AQI Level</Text>
         </View>
       </View>
 
+      {sources && (
+        <View style={styles.confidenceContainer}>
+          <Text style={styles.confidenceLabel}>Data confidence: </Text>
+          <Text style={[styles.confidenceText, 
+            { color: confidence === 'high' ? '#10b981' : 
+                     confidence === 'medium' ? '#eab308' : 
+                     confidence === 'conflicting' ? '#ef4444' : '#9ca3af' }]}>
+            {confidence === 'high' ? 'High (sources agree)' : 
+             confidence === 'medium' ? 'Medium (single source)' : 
+             confidence === 'conflicting' ? 'Low (sources conflict)' :
+             'Low (estimated)'}
+          </Text>
+        </View>
+      )}
+
+      {discrepancy?.detected && (
+        <View style={styles.warningContainer}>
+          <Text style={styles.warningText}>
+            ⚠️ {discrepancy.details}
+          </Text>
+          {(data as any)?.rawData && (
+            <Text style={styles.rawDataText}>
+              {[
+                (data as any).rawData.google?.aqi >= 0 ? `Google: ${(data as any).rawData.google.aqi}` : null,
+                (data as any).rawData.openweather?.aqi >= 0 ? `OpenWeather: ${(data as any).rawData.openweather.aqi}` : null,
+                (data as any).rawData.waqi?.aqi >= 0 ? `WAQI: ${(data as any).rawData.waqi.aqi}` : null,
+                (data as any).rawData.purpleair?.aqi >= 0 ? `PurpleAir: ${(data as any).rawData.purpleair.aqi}` : null,
+                (data as any).rawData.airnow?.aqi >= 0 ? `AirNow: ${(data as any).rawData.airnow.aqi}` : null
+              ].filter(Boolean).join(' • ')}
+            </Text>
+          )}
+        </View>
+      )}
+
       <Text style={styles.sectionTitle}>Pollutant Breakdown</Text>
       <View style={styles.pollutantsGrid}>
         <View style={styles.pollutantCard}>
           <Text style={styles.pollutantLabel}>PM2.5</Text>
-          <Text style={styles.pollutantValue}>{data.pollutants.pm25} µg/m³</Text>
+          <Text style={styles.pollutantValue}>
+            {data.pollutants.pm25 >= 0 ? `${data.pollutants.pm25} µg/m³` : 'N/A'}
+          </Text>
         </View>
         <View style={styles.pollutantCard}>
           <Text style={styles.pollutantLabel}>PM10</Text>
-          <Text style={styles.pollutantValue}>{data.pollutants.pm10} µg/m³</Text>
+          <Text style={styles.pollutantValue}>
+            {data.pollutants.pm10 >= 0 ? `${data.pollutants.pm10} µg/m³` : 'N/A'}
+          </Text>
         </View>
         <View style={styles.pollutantCard}>
           <Text style={styles.pollutantLabel}>Ozone</Text>
-          <Text style={styles.pollutantValue}>{data.pollutants.o3} µg/m³</Text>
+          <Text style={styles.pollutantValue}>
+            {data.pollutants.o3 >= 0 ? `${data.pollutants.o3} µg/m³` : 'N/A'}
+          </Text>
         </View>
         <View style={styles.pollutantCard}>
           <Text style={styles.pollutantLabel}>NO2</Text>
-          <Text style={styles.pollutantValue}>{data.pollutants.no2} µg/m³</Text>
+          <Text style={styles.pollutantValue}>
+            {data.pollutants.no2 >= 0 ? `${data.pollutants.no2} µg/m³` : 'N/A'}
+          </Text>
         </View>
       </View>
     </View>
@@ -141,6 +208,45 @@ const styles = StyleSheet.create({
     fontFamily: fonts.weight.semibold,
     color: '#111827',
     marginBottom: 12,
+  },
+  sourceText: {
+    ...fonts.body.tiny,
+    color: '#9ca3af',
+    marginTop: 2,
+  },
+  confidenceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+  },
+  confidenceLabel: {
+    ...fonts.body.small,
+    color: '#6b7280',
+  },
+  confidenceText: {
+    ...fonts.body.small,
+    fontFamily: fonts.weight.semibold,
+  },
+  warningContainer: {
+    backgroundColor: '#fef3c7',
+    borderLeftWidth: 3,
+    borderLeftColor: '#f59e0b',
+    padding: 12,
+    marginBottom: 16,
+    borderRadius: 6,
+  },
+  warningText: {
+    ...fonts.body.small,
+    color: '#92400e',
+    marginBottom: 4,
+  },
+  rawDataText: {
+    ...fonts.body.tiny,
+    color: '#78716c',
+    fontFamily: fonts.weight.regular,
   },
   pollutantsGrid: {
     flexDirection: 'row',

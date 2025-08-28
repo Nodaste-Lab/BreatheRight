@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, Text, StyleSheet, RefreshControl, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, ScrollView, Text, StyleSheet, RefreshControl, SafeAreaView, ActivityIndicator, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LocationFeedCard } from '../../components/location/LocationFeedCard';
 import { AddLocationModal } from '../../components/location/AddLocationModal';
@@ -12,7 +12,7 @@ import { TouchableOpacity } from 'react-native';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { user, profile } = useAuthStore();
+  const { user, profile, signOut } = useAuthStore();
   const { locations, fetchUserLocations, deleteLocation, loading } = useLocationStore();
   const [locationDataList, setLocationDataList] = useState<LocationData[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -38,66 +38,143 @@ export default function HomeScreen() {
   const fetchAllLocationData = async () => {
     const dataPromises = locations.map(async (location) => {
       try {
-        // Try to get real data first
-        const { fetchGoogleAirQuality } = await import('../../lib/api/google-air-quality');
+        // Try to get real data from combined sources
+        const { fetchCombinedAirQuality } = await import('../../lib/api/combined-air-quality');
         const { fetchPollenData } = await import('../../lib/api/pollen');
+        const { fetchQuickStormStatus } = await import('../../lib/api/weather');
+        const { fetchWildFireData } = await import('../../lib/api/airnow');
         
-        const [aqiResult, pollenResult] = await Promise.allSettled([
-          fetchGoogleAirQuality(location.latitude, location.longitude),
+        const [aqiResult, pollenResult, stormResult, wildfireResult] = await Promise.allSettled([
+          fetchCombinedAirQuality(location.latitude, location.longitude),
           fetchPollenData(location.latitude, location.longitude),
+          fetchQuickStormStatus(location.latitude, location.longitude),
+          fetchWildFireData(location.latitude, location.longitude),
         ]);
 
+        // Use N/A values when API fails
         const aqi = aqiResult.status === 'fulfilled' ? aqiResult.value : {
-          aqi: Math.floor(Math.random() * 150) + 20,
-          level: 'Moderate' as const,
-          pollutants: { pm25: 25, pm10: 45, o3: 65, no2: 20, so2: 10, co: 5 },
+          aqi: -1, // Use -1 to indicate N/A
+          level: 'Unknown' as const,
+          pollutants: { pm25: -1, pm10: -1, o3: -1, no2: -1, so2: -1, co: -1 },
           timestamp: new Date().toISOString(),
+          error: aqiResult.status === 'rejected' ? aqiResult.reason?.message || 'Failed to fetch AQI data' : undefined
         };
 
         const pollen = pollenResult.status === 'fulfilled' ? pollenResult.value : {
-          overall: Math.floor(Math.random() * 8) + 1,
-          tree: 3,
-          grass: 2,
-          weed: 4,
-          level: 'Medium' as const,
+          overall: -1, // Use -1 to indicate N/A
+          tree: -1,
+          grass: -1,
+          weed: -1,
+          level: 'Unknown' as const,
           timestamp: new Date().toISOString(),
+          error: pollenResult.status === 'rejected' ? pollenResult.reason?.message || 'Failed to fetch pollen data' : undefined
         };
 
-        // Mock lightning data for now
-        const lightning = {
-          probability: Math.floor(Math.random() * 100),
-          level: 'Low' as const,
+        // Use real storm data from OpenWeatherMap
+        const lightning = stormResult.status === 'fulfilled' ? stormResult.value : {
+          probability: -1,
+          level: 'Unknown' as const,
           timestamp: new Date().toISOString(),
+          error: stormResult.status === 'rejected' ? stormResult.reason?.message || 'Failed to fetch storm data' : undefined
         };
+
+        // Use real wildfire data from AirNow
+        const wildfire = wildfireResult.status === 'fulfilled' ? wildfireResult.value : {
+          smokeRisk: {
+            level: 'Unknown' as const,
+            pm25: -1,
+            visibility: -1
+          },
+          dustRisk: {
+            level: 'Unknown' as const,
+            pm10: -1,
+            visibility: -1
+          },
+          fireActivity: {
+            nearbyFires: -1,
+            closestFireDistance: -1,
+            largestFireSize: -1
+          },
+          outlook: {
+            next24Hours: 'Unknown' as const,
+            confidence: 'Low' as const,
+            details: 'Failed to fetch wildfire data'
+          },
+          timestamp: new Date().toISOString(),
+          error: wildfireResult.status === 'rejected' ? wildfireResult.reason?.message || 'Failed to fetch wildfire data' : undefined
+        };
+
+        // Log errors for debugging
+        if (aqiResult.status === 'rejected') {
+          console.error('AQI API failed for', location.name, ':', aqiResult.reason);
+        }
+        if (pollenResult.status === 'rejected') {
+          console.error('Pollen API failed for', location.name, ':', pollenResult.reason);
+        }
+        if (stormResult.status === 'rejected') {
+          console.error('Storm API failed for', location.name, ':', stormResult.reason);
+        }
+        if (wildfireResult.status === 'rejected') {
+          console.error('Wildfire API failed for', location.name, ':', wildfireResult.reason);
+        }
 
         return {
           location,
           aqi,
           pollen,
           lightning,
+          wildfire,
         } as LocationData;
       } catch (error) {
-        // Fallback to mock data
+        console.error('Error fetching location data for', location.name, ':', error);
+        // Return N/A data on complete failure
         return {
           location,
           aqi: {
-            aqi: Math.floor(Math.random() * 150) + 20,
-            level: 'Moderate' as const,
-            pollutants: { pm25: 25, pm10: 45, o3: 65, no2: 20, so2: 10, co: 5 },
+            aqi: -1,
+            level: 'Unknown' as const,
+            pollutants: { pm25: -1, pm10: -1, o3: -1, no2: -1, so2: -1, co: -1 },
             timestamp: new Date().toISOString(),
+            error: 'Failed to fetch data'
           },
           pollen: {
-            overall: Math.floor(Math.random() * 8) + 1,
-            tree: 3,
-            grass: 2,
-            weed: 4,
-            level: 'Medium' as const,
+            overall: -1,
+            tree: -1,
+            grass: -1,
+            weed: -1,
+            level: 'Unknown' as const,
             timestamp: new Date().toISOString(),
+            error: 'Failed to fetch data'
           },
           lightning: {
-            probability: Math.floor(Math.random() * 100),
-            level: 'Low' as const,
+            probability: -1,
+            level: 'Unknown' as const,
             timestamp: new Date().toISOString(),
+            error: 'Lightning data not available'
+          },
+          wildfire: {
+            smokeRisk: {
+              level: 'Unknown' as const,
+              pm25: -1,
+              visibility: -1
+            },
+            dustRisk: {
+              level: 'Unknown' as const,
+              pm10: -1,
+              visibility: -1
+            },
+            fireActivity: {
+              nearbyFires: -1,
+              closestFireDistance: -1,
+              largestFireSize: -1
+            },
+            outlook: {
+              next24Hours: 'Unknown' as const,
+              confidence: 'Low' as const,
+              details: 'Wildfire data not available'
+            },
+            timestamp: new Date().toISOString(),
+            error: 'Failed to fetch wildfire data'
           },
         } as LocationData;
       }
@@ -126,6 +203,47 @@ export default function HomeScreen() {
 
   const handleLocationAdded = () => {
     loadLocations();
+  };
+
+  const handleSignOut = async () => {
+    // For web, use window.confirm instead of Alert
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Are you sure you want to sign out?');
+      if (confirmed) {
+        try {
+          await signOut();
+          router.replace('/(auth)/sign-in');
+        } catch (error) {
+          console.error('Sign out error:', error);
+          alert('Failed to sign out. Please try again.');
+        }
+      }
+    } else {
+      // For mobile, use Alert
+      Alert.alert(
+        'Sign Out',
+        'Are you sure you want to sign out?',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel'
+          },
+          {
+            text: 'Sign Out',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await signOut();
+                router.replace('/(auth)/sign-in');
+              } catch (error) {
+                console.error('Sign out error:', error);
+                Alert.alert('Error', 'Failed to sign out. Please try again.');
+              }
+            }
+          }
+        ]
+      );
+    }
   };
 
   if (!user) {
@@ -161,16 +279,26 @@ export default function HomeScreen() {
       >
         <View style={styles.header}>
           <View style={styles.headerContent}>
-            <View>
-              <Text style={styles.greeting}>Welcome back</Text>
-              <Text style={styles.userName}>{profile?.name || 'User'}</Text>
+            <View style={styles.headerLeft}>
+              <View>
+                <Text style={styles.greeting}>Welcome back</Text>
+                <Text style={styles.userName}>{profile?.name || 'User'}</Text>
+              </View>
             </View>
-            <TouchableOpacity 
-              style={styles.addButton}
-              onPress={() => setShowAddModal(true)}
-            >
-              <Ionicons name="add-circle" size={44} color="#3b82f6" />
-            </TouchableOpacity>
+            <View style={styles.headerRight}>
+              <TouchableOpacity 
+                style={styles.signOutButton}
+                onPress={handleSignOut}
+              >
+                <Ionicons name="log-out-outline" size={28} color="#6b7280" />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.addButton}
+                onPress={() => setShowAddModal(true)}
+              >
+                <Ionicons name="add-circle" size={44} color="#3b82f6" />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -248,6 +376,17 @@ const styles = StyleSheet.create({
   },
   addButton: {
     padding: 4,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  signOutButton: {
+    padding: 8,
   },
   signInContainer: {
     flex: 1,

@@ -44,12 +44,12 @@ export function PollenCard({ data }: PollenCardProps) {
       </View>
 
       <View style={styles.mainContent}>
-        <View style={[styles.pollenCircle, { backgroundColor: getPollenColor(data.overall) }]}>
-          <Text style={styles.pollenValue}>{data.overall}</Text>
+        <View style={[styles.pollenCircle, { backgroundColor: getPollenColor(data.overall >= 0 ? data.overall : 0) }]}>
+          <Text style={styles.pollenValue}>{data.overall >= 0 ? data.overall : 'N/A'}</Text>
         </View>
         <View style={styles.pollenInfo}>
-          <Text style={[styles.levelText, { color: getPollenTextColor(data.overall) }]}>
-            {data.level}
+          <Text style={[styles.levelText, { color: getPollenTextColor(data.overall >= 0 ? data.overall : 0) }]}>
+            {data.level !== 'Unknown' ? data.level : 'N/A'}
           </Text>
           <Text style={styles.levelLabel}>Pollen Level</Text>
         </View>
@@ -60,15 +60,15 @@ export function PollenCard({ data }: PollenCardProps) {
         <View style={styles.pollenItem}>
           <View style={styles.pollenItemHeader}>
             <Text style={styles.pollenItemLabel}>Tree Pollen</Text>
-            <Text style={styles.pollenItemValue}>{data.tree}/10</Text>
+            <Text style={styles.pollenItemValue}>{data.tree >= 0 ? `${data.tree}/10` : 'N/A'}</Text>
           </View>
           <View style={styles.progressBarContainer}>
             <View 
               style={[
                 styles.progressBar, 
                 { 
-                  width: getBarWidth(data.tree),
-                  backgroundColor: getPollenColor(data.tree)
+                  width: data.tree >= 0 ? getBarWidth(data.tree) : '0%',
+                  backgroundColor: getPollenColor(data.tree >= 0 ? data.tree : 0)
                 }
               ]}
             />
@@ -78,15 +78,15 @@ export function PollenCard({ data }: PollenCardProps) {
         <View style={styles.pollenItem}>
           <View style={styles.pollenItemHeader}>
             <Text style={styles.pollenItemLabel}>Grass Pollen</Text>
-            <Text style={styles.pollenItemValue}>{data.grass}/10</Text>
+            <Text style={styles.pollenItemValue}>{data.grass >= 0 ? `${data.grass}/10` : 'N/A'}</Text>
           </View>
           <View style={styles.progressBarContainer}>
             <View 
               style={[
                 styles.progressBar, 
                 { 
-                  width: getBarWidth(data.grass),
-                  backgroundColor: getPollenColor(data.grass)
+                  width: data.grass >= 0 ? getBarWidth(data.grass) : '0%',
+                  backgroundColor: getPollenColor(data.grass >= 0 ? data.grass : 0)
                 }
               ]}
             />
@@ -96,15 +96,15 @@ export function PollenCard({ data }: PollenCardProps) {
         <View style={styles.pollenItem}>
           <View style={styles.pollenItemHeader}>
             <Text style={styles.pollenItemLabel}>Weed Pollen</Text>
-            <Text style={styles.pollenItemValue}>{data.weed}/10</Text>
+            <Text style={styles.pollenItemValue}>{data.weed >= 0 ? `${data.weed}/10` : 'N/A'}</Text>
           </View>
           <View style={styles.progressBarContainer}>
             <View 
               style={[
                 styles.progressBar, 
                 { 
-                  width: getBarWidth(data.weed),
-                  backgroundColor: getPollenColor(data.weed)
+                  width: data.weed >= 0 ? getBarWidth(data.weed) : '0%',
+                  backgroundColor: getPollenColor(data.weed >= 0 ? data.weed : 0)
                 }
               ]}
             />

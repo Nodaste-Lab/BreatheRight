@@ -49,9 +49,42 @@ jest.mock('./lib/supabase/client', () => ({
   },
 }));
 
-// Mock React Native modules
+// Mock React Native Alert specifically
 jest.mock('react-native/Libraries/Alert/Alert', () => ({
   alert: jest.fn(),
+}));
+
+// Mock Platform
+jest.mock('react-native/Libraries/Utilities/Platform', () => ({
+  OS: 'ios',
+  select: jest.fn((obj) => obj.ios),
+  isPad: false,
+  isTesting: true,
+  Version: 14,
+}));
+
+// Ensure Platform is available globally for React Native Testing Library
+const PlatformMock = {
+  OS: 'ios',
+  select: jest.fn((obj) => obj.ios),
+  isPad: false,
+  isTesting: true,
+  Version: 14,
+};
+
+global.Platform = PlatformMock;
+
+// Make sure require('react-native').Platform returns the same mock
+jest.doMock('react-native', () => ({
+  Platform: PlatformMock,
+  StyleSheet: {
+    create: jest.fn((styles) => styles),
+  },
+  Alert: { alert: jest.fn() },
+  View: 'View',
+  Text: 'Text',
+  ScrollView: 'ScrollView',
+  TouchableOpacity: 'TouchableOpacity',
 }));
 
 // Mock Expo Vector Icons
@@ -81,6 +114,33 @@ jest.mock('@expo-google-fonts/baloo-2', () => ({
 
 // Mock fetch for geocoding
 global.fetch = jest.fn();
+
+// Set environment variables for tests
+process.env.EXPO_PUBLIC_AIRNOW_API_KEY = 'test-api-key';
+
+// Mock Zustand
+jest.mock('zustand', () => ({
+  create: jest.fn((fn) => {
+    const mockState = {};
+    return jest.fn(() => {
+      if (typeof fn === 'function') {
+        const stateAndActions = fn(
+          (updater) => {
+            if (typeof updater === 'function') {
+              Object.assign(mockState, updater(mockState));
+            } else {
+              Object.assign(mockState, updater);
+            }
+          },
+          () => mockState
+        );
+        Object.assign(mockState, stateAndActions);
+        return mockState;
+      }
+      return mockState;
+    });
+  }),
+}));
 
 // Mock console methods for cleaner test output
 const originalWarn = console.warn;

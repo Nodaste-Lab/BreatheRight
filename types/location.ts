@@ -13,7 +13,7 @@ export interface Location {
 
 export interface AQIData {
   aqi: number;
-  level: 'Good' | 'Moderate' | 'Unhealthy for Sensitive Groups' | 'Unhealthy' | 'Very Unhealthy' | 'Hazardous';
+  level: 'Good' | 'Moderate' | 'Unhealthy for Sensitive Groups' | 'Unhealthy' | 'Very Unhealthy' | 'Hazardous' | 'Unknown';
   pollutants: {
     pm25: number;
     pm10: number;
@@ -23,6 +23,7 @@ export interface AQIData {
     co: number;
   };
   timestamp: string;
+  error?: string;
 }
 
 export interface PollenData {
@@ -30,19 +31,47 @@ export interface PollenData {
   tree: number;
   grass: number;
   weed: number;
-  level: 'Low' | 'Low-Medium' | 'Medium' | 'Medium-High' | 'High';
+  level: 'Low' | 'Low-Medium' | 'Medium' | 'Medium-High' | 'High' | 'Unknown';
   timestamp: string;
+  error?: string;
 }
 
 export interface LightningData {
-  probability: number; // 0-100 percentage
-  level: 'Low' | 'Moderate' | 'High';
+  probability: number; // 0-100 percentage, -1 for N/A
+  level: 'Low' | 'Moderate' | 'High' | 'Unknown';
   timestamp: string;
+  error?: string;
+}
+
+export interface WildFireData {
+  smokeRisk: {
+    level: 'Low' | 'Moderate' | 'High' | 'Unhealthy' | 'Very Unhealthy' | 'Hazardous' | 'Unknown';
+    pm25: number; // PM2.5 concentration from smoke
+    visibility: number; // Visibility in miles, -1 if unavailable
+  };
+  dustRisk: {
+    level: 'Low' | 'Moderate' | 'High' | 'Unknown';
+    pm10: number; // PM10 concentration from dust
+    visibility: number; // Visibility in miles, -1 if unavailable  
+  };
+  fireActivity: {
+    nearbyFires: number; // Number of fires within 50 miles
+    closestFireDistance: number; // Miles to closest fire, -1 if no fires
+    largestFireSize: number; // Acres of largest nearby fire, -1 if no fires
+  };
+  outlook: {
+    next24Hours: 'Improving' | 'Stable' | 'Worsening' | 'Unknown';
+    confidence: 'Low' | 'Moderate' | 'High';
+    details: string;
+  };
+  timestamp: string;
+  error?: string;
 }
 
 export interface LocationData {
   location: Location;
-  aqi: AQIData | null;
-  pollen: PollenData | null;
-  lightning?: LightningData | null;
+  aqi: AQIData;
+  pollen: PollenData;
+  lightning: LightningData;
+  wildfire: WildFireData;
 }
