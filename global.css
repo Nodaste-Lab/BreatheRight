@@ -1,3 +1,48 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom AQI Colors */
+:root {
+  /* AQI Level Colors */
+  --aqi-good: #CEF4FF;
+  --aqi-moderate: #F8FFCE;
+  --aqi-poor: #FFE4CE;
+  --aqi-unhealthy: #FFCECE;
+  --aqi-very-unhealthy: #C5B4DF;
+  --aqi-hazardous: #B195E8;
+
+  --neutral-90: #491124;
+
+  /* AQI Text Colors */
+  --aqi-good-text: #0B7A8F;
+  --aqi-moderate-text: #7A8F0B;
+  --aqi-poor-text: #8F5A0B;
+  --aqi-unhealthy-text: #8F0B0B;
+  --aqi-very-unhealthy-text: #6B4C8F;
+  --aqi-hazardous-text: #5A3D8F;
+}
+
+/* Basic utility classes that React Native CSS Interop can handle */
+@layer utilities {
+  .bg-aqi-good { background-color: var(--aqi-good); }
+  .bg-aqi-moderate { background-color: var(--aqi-moderate); }
+  .bg-aqi-poor { background-color: var(--aqi-poor); }
+  .bg-aqi-unhealthy { background-color: var(--aqi-unhealthy); }
+  .bg-aqi-very-unhealthy { background-color: var(--aqi-very-unhealthy); }
+  .bg-aqi-hazardous { background-color: var(--aqi-hazardous); }
+  
+  .text-aqi-good { color: var(--aqi-good-text); }
+  .text-aqi-moderate { color: var(--aqi-moderate-text); }
+  .text-aqi-poor { color: var(--aqi-poor-text); }
+  .text-aqi-unhealthy { color: var(--aqi-unhealthy-text); }
+  .text-aqi-very-unhealthy { color: var(--aqi-very-unhealthy-text); }
+  .text-aqi-hazardous { color: var(--aqi-hazardous-text); }
+  
+  .border-aqi-good { border-color: var(--aqi-good-text); }
+  .border-aqi-moderate { border-color: var(--aqi-moderate-text); }
+  .border-aqi-poor { border-color: var(--aqi-poor-text); }
+  .border-aqi-unhealthy { border-color: var(--aqi-unhealthy-text); }
+  .border-aqi-very-unhealthy { border-color: var(--aqi-very-unhealthy-text); }
+  .border-aqi-hazardous { border-color: var(--aqi-hazardous-text); }
+}

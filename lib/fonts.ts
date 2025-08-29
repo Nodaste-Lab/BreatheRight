@@ -71,8 +71,9 @@ export const fonts = {
     },
     regular: {
       fontFamily: 'NunitoSans-Regular',
-      fontSize: 16,
-      lineHeight: 24,
+      fontSize: 14,
+      fontWeight: '400',
+      lineHeight: 18,
     },
     small: {
       fontFamily: 'NunitoSans-Regular',

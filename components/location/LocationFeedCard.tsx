@@ -1,8 +1,20 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fonts } from '../../lib/fonts';
 import type { LocationData } from '../../types/location';
+import { getAQIColorByValue, getAQITextColorByValue } from '../../lib/colors/aqi-colors';
+import { 
+  getPollenColor, 
+  getPollenTextColor,
+  getLightningColor, 
+  getLightningTextColor,
+  getWildfireColor,
+  getWildfireTextColor,
+  UNAVAILABLE_COLOR 
+} from '../../lib/colors/environmental-colors';
+import { Card } from '../ui/Card';
+import { colors } from '../../lib/colors/theme';
 
 interface LocationFeedCardProps {
   data: LocationData;
@@ -18,53 +30,41 @@ export function LocationFeedCard({ data, onPress, onRemove }: LocationFeedCardPr
   const aqiConfidence = (aqi as any)?.confidence;
   const aqiDiscrepancy = (aqi as any)?.discrepancy;
 
-  // Truncate address to show only city/state or first part
-  const truncateAddress = (address: string) => {
-    const parts = address.split(',');
-    if (parts.length >= 2) {
-      return `${parts[parts.length - 2]}, ${parts[parts.length - 1]}`.trim();
-    }
-    return address.length > 30 ? address.substring(0, 30) + '...' : address;
+  // Display full address but truncate at 20 characters
+  const getDisplayAddress = (address: string) => {
+    if (!address) return '';
+    return address.length > 25 ? address.substring(0, 25) + '...' : address;
   };
 
-  // Get color based on AQI value
-  const getAQIColor = (value: number | null | undefined) => {
-    if (!value || value < 0) return '#9ca3af'; // gray for N/A
-    if (value <= 50) return '#10b981';  // green
-    if (value <= 100) return '#eab308'; // yellow
-    if (value <= 150) return '#f97316'; // orange
-    return '#ef4444'; // red
+  // Get AQI color (with fallback for N/A values)
+  const getAQIColorSafe = (value: number | null | undefined) => {
+    if (!value || value < 0) return UNAVAILABLE_COLOR;
+    return getAQIColorByValue(value);
   };
 
-  // Get color based on pollen value
-  const getPollenColor = (value: number | null | undefined) => {
-    if (!value || value < 0) return '#9ca3af'; // gray for N/A
-    if (value <= 3) return '#10b981';  // green
-    if (value <= 6) return '#eab308'; // yellow
-    return '#f97316'; // orange
+  // Get appropriate kawaii image based on score
+  const getAQIImage = (score: number | null | undefined) => {
+    if (!score || score < 0) return require('../../assets/kawaii/aqi-good.png');
+    if (score <= 100) return require('../../assets/kawaii/aqi-good.png');
+    if (score <= 200) return require('../../assets/kawaii/aqi-moderate.png');
+    return require('../../assets/kawaii/aqi-unhealthy.png');
   };
 
-  // Get color based on lightning probability
-  const getLightningColor = (probability: number | null | undefined) => {
-    if (probability === null || probability === undefined || probability < 0) return '#9ca3af'; // gray for N/A
-    if (probability <= 30) return '#10b981';  // green
-    if (probability <= 60) return '#eab308'; // yellow
-    return '#ef4444'; // red
+  const getPollenImage = (score: number | null | undefined) => {
+    if (!score || score < 0) return require('../../assets/kawaii/pollen-good.png');
+    const scaledScore = score * 10; // Convert to 0-100 scale
+    if (scaledScore <= 100) return require('../../assets/kawaii/pollen-good.png');
+    if (scaledScore <= 200) return require('../../assets/kawaii/pollen-moderate.png');
+    return require('../../assets/kawaii/pollen-unhealthy.png');
   };
 
-  // Get color based on wildfire smoke level
-  const getWildFireColor = (smokeLevel: string | null | undefined) => {
-    if (!smokeLevel || smokeLevel === 'Unknown') return '#9ca3af'; // gray for N/A
-    switch (smokeLevel) {
-      case 'Low': return '#10b981';  // green
-      case 'Moderate': return '#eab308'; // yellow
-      case 'High': return '#f97316'; // orange
-      case 'Unhealthy':
-      case 'Very Unhealthy':
-      case 'Hazardous': return '#ef4444'; // red
-      default: return '#9ca3af';
-    }
+  const getLightningImage = (probability: number | null | undefined) => {
+    if (!probability || probability < 0) return require('../../assets/kawaii/storm-good.png');
+    if (probability <= 100) return require('../../assets/kawaii/storm-good.png');
+    if (probability <= 200) return require('../../assets/kawaii/storm-moderate.png');
+    return require('../../assets/kawaii/storm-unhealthy.png');
   };
+
 
   // Get description text
   const getDescription = () => {
@@ -105,35 +105,48 @@ export function LocationFeedCard({ data, onPress, onRemove }: LocationFeedCardPr
 
   return (
     <TouchableOpacity 
-      style={styles.container} 
       onPress={onPress} 
       activeOpacity={0.7}
       testID="location-card-touchable"
     >
+      <Card variant="default" style={styles.container}>
       <View style={styles.header}>
         <View style={styles.locationInfo}>
-          <Ionicons name="location-outline" size={20} color="#6b7280" />
+          <Ionicons name="navigate-outline" size={19} color={colors.burgundy} />
           <View style={styles.locationText}>
-            <Text style={styles.locationName}>{location.name}</Text>
-            <Text style={styles.locationAddress}>{truncateAddress(location.address)}</Text>
+            <Text style={styles.locationName}>
+              {location.name} <Text style={styles.locationAddress}>{getDisplayAddress(location.address)}</Text>
+            </Text>
           </View>
         </View>
       </View>
 
-      <Text style={styles.description}>{getDescription()}</Text>
+      <View style={styles.locationDescription}>
+        <View style={styles.locationDescriptionIcon}>
+          <Image source={require('../../assets/kawaii/lungs-good.png')} style={styles.LungImage} />
+        </View>
+        <View style={styles.locationDescriptionText}>
+          <Text style={styles.locationDescriptionHeadline}>Stormy Tingles</Text>
+          <Text style={styles.locationDescriptionBody}>
+            {getDescription()}
+          </Text>
+        </View>
+      </View>
 
       <Text style={styles.sectionTitle}>Right Now</Text>
       
       <View style={styles.scoresContainer}>
         {/* AQI Score */}
         <View style={styles.scoreCard}>
-          <View style={[styles.scoreIcon, { backgroundColor: getAQIColor(aqi?.aqi) + '20' }]}>
-            <Text style={styles.scoreEmoji}>🏭</Text>
+          <View style={[styles.scoreIcon, { backgroundColor: getAQIColorSafe(aqi?.aqi) }]}>
+            <Image source={getAQIImage(aqi?.aqi)} style={styles.scoreKawaiiImage} />
           </View>
-          <Text style={[styles.scoreValue, { color: getAQIColor(aqi?.aqi) }]}>
-            {aqi && aqi.aqi >= 0 ? aqi.aqi : 'N/A'}
-          </Text>
-          <Text style={styles.scoreLabel}>Air</Text>
+          <View style={[styles.scoreValueContainer, { backgroundColor: getAQIColorSafe(aqi?.aqi) }]}>
+            <Text style={[styles.scoreValue, { color: colors.burgundy }]}>
+              {aqi && aqi.aqi >= 0 ? aqi.aqi : 'N/A'}
+            </Text>
+          </View>
+          {/* <Text style={styles.scoreLabel}>Air</Text>
           {aqiSources && (
             <Text style={styles.sourceIndicator}>
               {(() => {
@@ -141,41 +154,45 @@ export function LocationFeedCard({ data, onPress, onRemove }: LocationFeedCardPr
                 return '●'.repeat(sourceCount) + '○'.repeat(5 - sourceCount);
               })()}
             </Text>
-          )}
+          )} */}
         </View>
 
         {/* Pollen Score */}
         <View style={styles.scoreCard}>
-          <View style={[styles.scoreIcon, { backgroundColor: getPollenColor(pollen?.overall) + '20' }]}>
-            <Text style={styles.scoreEmoji}>🌻</Text>
+          <View style={[styles.scoreIcon, { backgroundColor: getPollenColor(pollen?.overall)}]}>
+            <Image source={getPollenImage(pollen?.overall)} style={styles.scoreKawaiiImage} />
           </View>
-          <Text style={[styles.scoreValue, { color: getPollenColor(pollen?.overall) }]}>
-            {pollen && pollen.overall >= 0 ? `${pollen.overall * 10}` : 'N/A'}
-          </Text>
-          <Text style={styles.scoreLabel}>Pollen</Text>
+          <View style={[styles.scoreValueContainer, { backgroundColor: getPollenColor(pollen?.overall) }]}>
+            <Text style={[styles.scoreValue, { color: colors.burgundy }]}>
+              {pollen && pollen.overall >= 0 ? `${pollen.overall * 10}` : 'N/A'}
+            </Text>
+          </View>
+          {/* <Text style={styles.scoreLabel}>Pollen</Text> */}
         </View>
 
         {/* Lightning Score */}
         <View style={styles.scoreCard}>
-          <View style={[styles.scoreIcon, { backgroundColor: getLightningColor(lightning?.probability) + '20' }]}>
-            <Text style={styles.scoreEmoji}>⛈️</Text>
+          <View style={[styles.scoreIcon, { backgroundColor: getLightningColor(lightning?.probability) }]}>
+            <Image source={getLightningImage(lightning?.probability)} style={styles.scoreKawaiiImage} />
           </View>
-          <Text style={[styles.scoreValue, { color: getLightningColor(lightning?.probability) }]}>
-            {lightning && lightning.probability >= 0 ? `${lightning.probability}%` : 'N/A'}
-          </Text>
-          <Text style={styles.scoreLabel}>Storm</Text>
+          <View style={[styles.scoreValueContainer, { backgroundColor: getLightningColor(lightning?.probability) }]}>
+            <Text style={[styles.scoreValue, { color: colors.burgundy }]}>
+              {lightning && lightning.probability >= 0 ? `${lightning.probability}%` : 'N/A'}
+            </Text>
+          </View>
+          {/* <Text style={styles.scoreLabel}>Storm</Text> */}
         </View>
 
         {/* Wildfire Score */}
-        <View style={styles.scoreCard}>
-          <View style={[styles.scoreIcon, { backgroundColor: getWildFireColor(wildfire?.smokeRisk?.level) + '20' }]}>
+        {/* <View style={styles.scoreCard}>
+          <View style={[styles.scoreIcon, { backgroundColor: getWildfireColor(wildfire?.smokeRisk?.level) + '20' }]}>
             <Text style={styles.scoreEmoji}>🔥</Text>
           </View>
-          <Text style={[styles.scoreValue, { color: getWildFireColor(wildfire?.smokeRisk?.level) }]}>
+          <Text style={[styles.scoreValue, { color: getWildfireColor(wildfire?.smokeRisk?.level) }]}>
             {wildfire?.smokeRisk?.pm25 && wildfire.smokeRisk.pm25 >= 0 ? wildfire.smokeRisk.pm25 : 'N/A'}
           </Text>
           <Text style={styles.scoreLabel}>Smoke</Text>
-        </View>
+        </View> */}
       </View>
 
       {/* Data source info */}
@@ -211,36 +228,56 @@ export function LocationFeedCard({ data, onPress, onRemove }: LocationFeedCardPr
           </TouchableOpacity>
         )}
         <View style={styles.updateInfo}>
-          <Ionicons name="time-outline" size={14} color="#9ca3af" />
+          <Ionicons name="time-outline" size={14} color={colors.text.secondary} />
           <Text style={styles.updateText}>Last update {formatUpdateTime()}</Text>
         </View>
       </View>
+      </Card>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
     marginHorizontal: 16,
     marginVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+  },
+  LungImage: {
+    width: 122,
+    height: 122,
+    resizeMode: 'contain',
   },
   header: {
     marginBottom: 12,
+    flexDirection: 'column',
+  },
+  locationDescription: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  locationDescriptionIcon: {
+    marginRight: 15,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  locationDescriptionText: {
+    marginRight: 4,
+    flex: 1,
+  },
+  locationDescriptionHeadline: {
+    ...fonts.headline.h4,
+    color: colors.burgundy,
+    flexWrap: 'wrap',
+  },
+  locationDescriptionBody: {
+    ...fonts.body.regular,
+    color: colors.burgundy,
+    flexWrap: 'wrap',
   },
   locationInfo: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   locationText: {
     marginLeft: 8,
@@ -248,12 +285,11 @@ const styles = StyleSheet.create({
   },
   locationName: {
     ...fonts.headline.h4,
-    color: '#111827',
-    marginBottom: 2,
+    color: colors.burgundy,
   },
   locationAddress: {
-    ...fonts.body.small,
-    color: '#6b7280',
+    ...fonts.body.tiny,
+    color: colors.burgundy,
   },
   description: {
     ...fonts.body.regular,
@@ -262,12 +298,10 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   sectionTitle: {
-    ...fonts.body.small,
-    fontFamily: fonts.weight.semibold,
-    color: '#9ca3af',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 12,
+     ...fonts.headline.h4,
+    color: colors.burgundy,
+    marginBottom: 8,
+    marginTop: 16,
   },
   scoresContainer: {
     flexDirection: 'row',
@@ -277,26 +311,42 @@ const styles = StyleSheet.create({
   scoreCard: {
     flex: 1,
     alignItems: 'center',
-    marginHorizontal: 2,
+    marginHorizontal: 4, // 4px on each side = 8px total gap between items
   },
   scoreIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 12,
+    width: '100%',
+    aspectRatio: 1, // Makes it a square based on the width
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
+    padding: 12,
   },
   scoreEmoji: {
     fontSize: 24,
   },
+  scoreKawaiiImage: {
+    width: '125%', // Takes 90% of the scoreIcon container width
+    height: '125%', // Maintains aspect ratio within the square container
+    resizeMode: 'contain',
+  },
+  scoreValueContainer: {
+    backgroundColor: 'transparent', // Will be overridden by dynamic color
+    borderRadius: 12,
+    paddingLeft: 15,
+    paddingRight: 15,
+    paddingTop: 8,
+    marginBottom: 4,
+    minWidth: 40,
+    alignItems: 'center',
+  },
   scoreValue: {
     ...fonts.headline.h3,
-    marginBottom: 4,
+    fontWeight: 'bold',
   },
   scoreLabel: {
     ...fonts.body.tiny,
-    color: '#6b7280',
+    color: colors.text.secondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -306,7 +356,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
+    borderTopColor: colors.border,
   },
   removeButton: {
     flexDirection: 'row',
@@ -325,7 +375,7 @@ const styles = StyleSheet.create({
   },
   updateText: {
     ...fonts.body.tiny,
-    color: '#9ca3af',
+    color: colors.text.secondary,
     marginLeft: 4,
   },
   sourceIndicator: {
@@ -337,11 +387,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
+    borderTopColor: colors.border,
   },
   dataSourceText: {
     ...fonts.body.tiny,
-    color: '#6b7280',
+    color: colors.text.secondary,
     textAlign: 'center',
   },
 });

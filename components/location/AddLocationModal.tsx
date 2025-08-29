@@ -138,7 +138,7 @@ export function AddLocationModal({ visible, onClose, onLocationAdded }: AddLocat
             <View style={styles.optionSection}>
               <Text style={styles.optionTitle}>Use Current Location</Text>
               <Text style={styles.optionDescription}>
-                We'll automatically detect your GPS location
+                We&apos;ll automatically detect your GPS location
               </Text>
               <Button
                 title={isUsingCurrentLocation ? "Getting Location..." : "Use Current Location"}

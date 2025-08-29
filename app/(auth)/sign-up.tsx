@@ -8,7 +8,6 @@ import {
   Alert,
   SafeAreaView,
   StyleSheet,
-  TextInput,
   TouchableOpacity
 } from 'react-native';
 import { Link, router } from 'expo-router';
@@ -17,6 +16,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import { useAuthStore } from '../../store/auth';
+import { Input } from '../../components/ui/Input';
+import { Button } from '../../components/ui/Button';
 
 const signUpSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -130,20 +131,16 @@ export default function SignUpScreen() {
                 control={control}
                 name="name"
                 render={({ field: { onChange, onBlur, value } }) => (
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.label}>Full Name *</Text>
-                    <TextInput
-                      style={[styles.input, errors.name && styles.inputError]}
-                      value={value}
-                      onChangeText={onChange}
-                      onBlur={onBlur}
-                      autoCapitalize="words"
-                      placeholder="Enter your full name"
-                    />
-                    {errors.name && (
-                      <Text style={styles.errorText}>{errors.name.message}</Text>
-                    )}
-                  </View>
+                  <Input
+                    label="Full Name"
+                    required
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    autoCapitalize="words"
+                    placeholder="Enter your full name"
+                    error={errors.name?.message}
+                  />
                 )}
               />
 
@@ -151,22 +148,18 @@ export default function SignUpScreen() {
                 control={control}
                 name="email"
                 render={({ field: { onChange, onBlur, value } }) => (
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.label}>Email *</Text>
-                    <TextInput
-                      style={[styles.input, errors.email && styles.inputError]}
-                      value={value}
-                      onChangeText={onChange}
-                      onBlur={onBlur}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      placeholder="Enter your email"
-                    />
-                    {errors.email && (
-                      <Text style={styles.errorText}>{errors.email.message}</Text>
-                    )}
-                  </View>
+                  <Input
+                    label="Email"
+                    required
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    placeholder="Enter your email"
+                    error={errors.email?.message}
+                  />
                 )}
               />
 
@@ -174,20 +167,16 @@ export default function SignUpScreen() {
                 control={control}
                 name="password"
                 render={({ field: { onChange, onBlur, value } }) => (
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.label}>Password *</Text>
-                    <TextInput
-                      style={[styles.input, errors.password && styles.inputError]}
-                      value={value}
-                      onChangeText={onChange}
-                      onBlur={onBlur}
-                      secureTextEntry
-                      placeholder="Enter your password"
-                    />
-                    {errors.password && (
-                      <Text style={styles.errorText}>{errors.password.message}</Text>
-                    )}
-                  </View>
+                  <Input
+                    label="Password"
+                    required
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    secureTextEntry
+                    placeholder="Enter your password"
+                    error={errors.password?.message}
+                  />
                 )}
               />
 
@@ -195,20 +184,16 @@ export default function SignUpScreen() {
                 control={control}
                 name="confirmPassword"
                 render={({ field: { onChange, onBlur, value } }) => (
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.label}>Confirm Password *</Text>
-                    <TextInput
-                      style={[styles.input, errors.confirmPassword && styles.inputError]}
-                      value={value}
-                      onChangeText={onChange}
-                      onBlur={onBlur}
-                      secureTextEntry
-                      placeholder="Confirm your password"
-                    />
-                    {errors.confirmPassword && (
-                      <Text style={styles.errorText}>{errors.confirmPassword.message}</Text>
-                    )}
-                  </View>
+                  <Input
+                    label="Confirm Password"
+                    required
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    secureTextEntry
+                    placeholder="Confirm your password"
+                    error={errors.confirmPassword?.message}
+                  />
                 )}
               />
             </View>
@@ -217,15 +202,15 @@ export default function SignUpScreen() {
               By creating an account, you agree to our Terms of Service and Privacy Policy
             </Text>
 
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
-              onPress={handleSubmit(onSubmit)}
-              disabled={loading}
-            >
-              <Text style={styles.buttonText}>
-                {loading ? 'Creating Account...' : 'Create Account'}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.buttonContainer}>
+              <Button
+                title={loading ? 'Creating Account...' : 'Create Account'}
+                onPress={handleSubmit(onSubmit)}
+                disabled={loading}
+                loading={loading}
+                fullWidth
+              />
+            </View>
 
             <View style={styles.linkContainer}>
               <Text style={styles.linkText}>Already have an account? </Text>
@@ -243,7 +228,7 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
   },
   keyboardView: {
     flex: 1,
@@ -278,33 +263,6 @@ const styles = StyleSheet.create({
   form: {
     marginBottom: 24,
   },
-  inputContainer: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: '#FFFFFF',
-    color: '#111827',
-  },
-  inputError: {
-    borderColor: '#EF4444',
-  },
-  errorText: {
-    color: '#EF4444',
-    fontSize: 14,
-    marginTop: 4,
-  },
   termsText: {
     color: '#6B7280',
     fontSize: 14,
@@ -312,21 +270,8 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     lineHeight: 20,
   },
-  button: {
-    backgroundColor: '#2563EB',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    alignItems: 'center',
+  buttonContainer: {
     marginBottom: 16,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
   },
   linkContainer: {
     flexDirection: 'row',

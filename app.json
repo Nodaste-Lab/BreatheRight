@@ -18,11 +18,6 @@
       },
       "edgeToEdgeEnabled": true
     },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
     "plugins": [
       "expo-router",
       [
@@ -41,7 +36,10 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {},
+      "router": {
+        "origin": false,
+        "appRoot": "./app"
+      },
       "eas": {
         "projectId": "44b52b9e-4c00-4da6-be27-53ac3f6f2186"
       }

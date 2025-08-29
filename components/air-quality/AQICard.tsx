@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import type { AQIData } from '../../types/location';
 import { fonts } from '../../lib/fonts';
+import { getAQITextColorByValue, getAQICategory } from '../../lib/colors/aqi-colors';
+import { Card } from '../ui/Card';
 
 interface AQICardProps {
   data: AQIData;
@@ -12,23 +14,9 @@ export function AQICard({ data }: AQICardProps) {
   const sources = (data as any)?.sources;
   const confidence = (data as any)?.confidence;
   const discrepancy = (data as any)?.discrepancy;
-  const getAQIColor = (aqi: number): string => {
-    if (aqi <= 50) return '#10b981';  // green-500
-    if (aqi <= 100) return '#eab308'; // yellow-500
-    if (aqi <= 150) return '#f97316'; // orange-500
-    if (aqi <= 200) return '#ef4444'; // red-500
-    if (aqi <= 300) return '#a855f7'; // purple-500
-    return '#7f1d1d'; // red-900
-  };
-
-  const getAQITextColor = (aqi: number): string => {
-    if (aqi <= 50) return '#15803d';  // green-700
-    if (aqi <= 100) return '#a16207'; // yellow-700
-    if (aqi <= 150) return '#c2410c'; // orange-700
-    if (aqi <= 200) return '#b91c1c'; // red-700
-    if (aqi <= 300) return '#6b21a8'; // purple-700
-    return '#7f1d1d'; // red-900
-  };
+  
+  // Get AQI category info with our new color system
+  const aqiCategory = getAQICategory(data.aqi);
 
   const formatTime = (timestamp: string): string => {
     return new Date(timestamp).toLocaleTimeString('en-US', {
@@ -39,7 +27,7 @@ export function AQICard({ data }: AQICardProps) {
   };
 
   return (
-    <View style={styles.container}>
+    <Card>
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Air Quality Index</Text>
@@ -67,11 +55,11 @@ export function AQICard({ data }: AQICardProps) {
       </View>
 
       <View style={styles.mainContent}>
-        <View style={[styles.aqiCircle, { backgroundColor: getAQIColor(data.aqi >= 0 ? data.aqi : 0) }]}>
+        <View style={[styles.aqiCircle, { backgroundColor: aqiCategory.color }]}>
           <Text style={styles.aqiValue}>{data.aqi >= 0 ? data.aqi : 'N/A'}</Text>
         </View>
         <View style={styles.aqiInfo}>
-          <Text style={[styles.levelText, { color: getAQITextColor(data.aqi >= 0 ? data.aqi : 0) }]}>
+          <Text style={[styles.levelText, { color: aqiCategory.textColor }]}>
             {data.level !== 'Unknown' ? data.level : 'N/A'}
           </Text>
           <Text style={styles.levelLabel}>AQI Level</Text>
@@ -82,9 +70,9 @@ export function AQICard({ data }: AQICardProps) {
         <View style={styles.confidenceContainer}>
           <Text style={styles.confidenceLabel}>Data confidence: </Text>
           <Text style={[styles.confidenceText, 
-            { color: confidence === 'high' ? '#10b981' : 
-                     confidence === 'medium' ? '#eab308' : 
-                     confidence === 'conflicting' ? '#ef4444' : '#9ca3af' }]}>
+            { color: confidence === 'high' ? getAQITextColorByValue(30) : 
+                     confidence === 'medium' ? getAQITextColorByValue(75) : 
+                     confidence === 'conflicting' ? getAQITextColorByValue(175) : '#9ca3af' }]}>
             {confidence === 'high' ? 'High (sources agree)' : 
              confidence === 'medium' ? 'Medium (single source)' : 
              confidence === 'conflicting' ? 'Low (sources conflict)' :
@@ -139,27 +127,11 @@ export function AQICard({ data }: AQICardProps) {
           </Text>
         </View>
       </View>
-    </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 24,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -168,7 +140,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...fonts.headline.h5,
-    color: '#111827',
+    color: '#491124',
   },
   timestamp: {
     ...fonts.body.small,
@@ -255,7 +227,7 @@ const styles = StyleSheet.create({
   },
   pollutantCard: {
     width: '48%',
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#f3f4f6',
     padding: 12,
     borderRadius: 8,
     marginHorizontal: '1%',

@@ -8,7 +8,6 @@ import {
   Alert,
   SafeAreaView,
   StyleSheet,
-  TextInput,
   TouchableOpacity
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -18,6 +17,8 @@ import { z } from 'zod';
 
 import { useAuthStore } from '../../store/auth';
 import { supabase } from '../../lib/supabase/client';
+import { Input } from '../../components/ui/Input';
+import { Button } from '../../components/ui/Button';
 
 const resetPasswordSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
@@ -146,12 +147,13 @@ export default function ResetPasswordScreen() {
             </Text>
           </View>
           
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => router.push('/(auth)/forgot-password')}
-          >
-            <Text style={styles.buttonText}>Request New Reset Link</Text>
-          </TouchableOpacity>
+          <View style={styles.buttonContainer}>
+            <Button
+              title="Request New Reset Link"
+              onPress={() => router.push('/(auth)/forgot-password')}
+              fullWidth
+            />
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -217,20 +219,16 @@ export default function ResetPasswordScreen() {
                 control={control}
                 name="password"
                 render={({ field: { onChange, onBlur, value } }) => (
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.label}>New Password *</Text>
-                    <TextInput
-                      style={[styles.input, errors.password && styles.inputError]}
-                      value={value}
-                      onChangeText={onChange}
-                      onBlur={onBlur}
-                      secureTextEntry
-                      placeholder="Enter your new password"
-                    />
-                    {errors.password && (
-                      <Text style={styles.errorText}>{errors.password.message}</Text>
-                    )}
-                  </View>
+                  <Input
+                    label="New Password"
+                    required
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    secureTextEntry
+                    placeholder="Enter your new password"
+                    error={errors.password?.message}
+                  />
                 )}
               />
 
@@ -238,33 +236,29 @@ export default function ResetPasswordScreen() {
                 control={control}
                 name="confirmPassword"
                 render={({ field: { onChange, onBlur, value } }) => (
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.label}>Confirm New Password *</Text>
-                    <TextInput
-                      style={[styles.input, errors.confirmPassword && styles.inputError]}
-                      value={value}
-                      onChangeText={onChange}
-                      onBlur={onBlur}
-                      secureTextEntry
-                      placeholder="Confirm your new password"
-                    />
-                    {errors.confirmPassword && (
-                      <Text style={styles.errorText}>{errors.confirmPassword.message}</Text>
-                    )}
-                  </View>
+                  <Input
+                    label="Confirm New Password"
+                    required
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    secureTextEntry
+                    placeholder="Confirm your new password"
+                    error={errors.confirmPassword?.message}
+                  />
                 )}
               />
             </View>
 
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
-              onPress={handleSubmit(onSubmit)}
-              disabled={loading}
-            >
-              <Text style={styles.buttonText}>
-                {loading ? 'Updating Password...' : 'Update Password'}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.buttonContainer}>
+              <Button
+                title={loading ? 'Updating Password...' : 'Update Password'}
+                onPress={handleSubmit(onSubmit)}
+                disabled={loading}
+                loading={loading}
+                fullWidth
+              />
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -275,7 +269,7 @@ export default function ResetPasswordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
   },
   keyboardView: {
     flex: 1,
@@ -311,48 +305,8 @@ const styles = StyleSheet.create({
   form: {
     marginBottom: 24,
   },
-  inputContainer: {
+  buttonContainer: {
     marginBottom: 16,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: '#FFFFFF',
-    color: '#111827',
-  },
-  inputError: {
-    borderColor: '#EF4444',
-  },
-  errorText: {
-    color: '#EF4444',
-    fontSize: 14,
-    marginTop: 4,
-  },
-  button: {
-    backgroundColor: '#2563EB',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
   },
   linkContainer: {
     flexDirection: 'row',

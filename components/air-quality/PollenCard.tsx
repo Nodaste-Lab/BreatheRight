@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import type { PollenData } from '../../types/location';
 import { fonts } from '../../lib/fonts';
+import { Card } from '../ui/Card';
 
 interface PollenCardProps {
   data: PollenData;
@@ -37,7 +38,7 @@ export function PollenCard({ data }: PollenCardProps) {
   };
 
   return (
-    <View style={styles.container}>
+    <Card>
       <View style={styles.header}>
         <Text style={styles.title}>Pollen Count</Text>
         <Text style={styles.timestamp}>Updated {formatTime(data.timestamp)}</Text>
@@ -111,27 +112,11 @@ export function PollenCard({ data }: PollenCardProps) {
           </View>
         </View>
       </View>
-    </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 24,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',

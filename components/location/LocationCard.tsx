@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { Location } from '../../types/location';
 import { useLocationStore } from '../../store/location';
+import { Card } from '../ui/Card';
 
 interface LocationCardProps {
   location: Location;
@@ -44,15 +45,15 @@ export function LocationCard({ location, onPress, onDelete }: LocationCardProps)
     );
   };
 
-  const cardStyle = location.show_in_home ? [styles.card, styles.primaryCard] : styles.card;
+  const cardStyle = location.show_in_home ? styles.primaryCard : undefined;
 
   return (
     <TouchableOpacity
       onPress={onPress}
-      style={cardStyle}
       disabled={loading}
     >
-      <View style={styles.cardContent}>
+      <Card variant="compact" style={cardStyle}>
+        <View style={styles.cardContent}>
         <View style={styles.locationInfo}>
           <View style={styles.nameRow}>
             <Text style={styles.locationName}>
@@ -92,23 +93,17 @@ export function LocationCard({ location, onPress, onDelete }: LocationCardProps)
             <Ionicons name="trash-outline" size={20} color="#EF4444" />
           </TouchableOpacity>
         </View>
-      </View>
+        </View>
+      </Card>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: 'white',
-    marginBottom: 12,
-  },
   primaryCard: {
     borderColor: '#3B82F6',
     backgroundColor: '#EFF6FF',
+    borderWidth: 1,
   },
   cardContent: {
     flexDirection: 'row',

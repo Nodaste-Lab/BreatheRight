@@ -6,6 +6,8 @@ import { AddLocationModal } from '../../components/location/AddLocationModal';
 import { useLocationStore } from '../../store/location';
 import { useAuthStore } from '../../store/auth';
 import { fonts } from '../../lib/fonts';
+import { colors } from '../../lib/colors/theme';
+import { GradientBackground } from '../../components/ui/GradientBackground';
 import type { LocationData } from '../../types/location';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
@@ -248,30 +250,35 @@ export default function HomeScreen() {
 
   if (!user) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.signInContainer}>
-          <Text style={styles.signInText}>Please sign in to view your locations</Text>
-        </View>
-      </SafeAreaView>
+      <GradientBackground>
+        <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }}>
+          <View style={styles.signInContainer}>
+            <Text style={styles.signInText}>Please sign in to view your locations</Text>
+          </View>
+        </SafeAreaView>
+      </GradientBackground>
     );
   }
 
   if (loading && locationDataList.length === 0) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3b82f6" />
-          <Text style={styles.loadingText}>Loading your locations...</Text>
-        </View>
-      </SafeAreaView>
+      <GradientBackground>
+        <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#3b82f6" />
+            <Text style={styles.loadingText}>Loading your locations...</Text>
+          </View>
+        </SafeAreaView>
+      </GradientBackground>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <GradientBackground>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }}>
       <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        style={{ flex: 1, backgroundColor: 'transparent' }}
+        contentContainerStyle={{ flexGrow: 1, backgroundColor: 'transparent' }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -337,13 +344,13 @@ export default function HomeScreen() {
         onLocationAdded={handleLocationAdded}
       />
     </SafeAreaView>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
   },
   scrollView: {
     flex: 1,
@@ -352,7 +359,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   header: {
-    backgroundColor: 'white',
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 20,
@@ -431,7 +437,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   addFirstButton: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,

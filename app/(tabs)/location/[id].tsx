@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, Text, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, ScrollView, Text, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity, Modal, FlatList } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocationStore } from '../../store/location';
-import { AQICard } from '../../components/air-quality/AQICard';
-import { PollenCard } from '../../components/air-quality/PollenCard';
-import { fonts } from '../../lib/fonts';
-import type { LocationData, LightningData, WildFireData } from '../../types/location';
+import { useLocationStore } from '../../../store/location';
+import { AQICard } from '../../../components/air-quality/AQICard';
+import { PollenCard } from '../../../components/air-quality/PollenCard';
+import { Card } from '../../../components/ui/Card';
+import { fonts } from '../../../lib/fonts';
+import { colors } from '@/lib/colors/theme';
+import { GradientBackground } from '@/components/ui/GradientBackground';
+import type { LocationData, LightningData, WildFireData } from '../../../types/location';
 
 export default function LocationDetailsScreen() {
   const { id } = useLocalSearchParams();
@@ -14,6 +17,7 @@ export default function LocationDetailsScreen() {
   const { locations, getCurrentLocationData, currentLocation, loading } = useLocationStore();
   const [locationData, setLocationData] = useState<LocationData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
 
   const location = locations.find(loc => loc.id === id);
 
@@ -31,10 +35,10 @@ export default function LocationDetailsScreen() {
       if (!loc) return;
 
       // Fetch real data from combined sources
-      const { fetchCombinedAirQuality } = await import('../../lib/api/combined-air-quality');
-      const { fetchPollenData } = await import('../../lib/api/pollen');
-      const { fetchQuickStormStatus } = await import('../../lib/api/weather');
-      const { fetchWildFireData } = await import('../../lib/api/airnow');
+      const { fetchCombinedAirQuality } = await import('../../../lib/api/combined-air-quality');
+      const { fetchPollenData } = await import('../../../lib/api/pollen');
+      const { fetchQuickStormStatus } = await import('../../../lib/api/weather');
+      const { fetchWildFireData } = await import('../../../lib/api/airnow');
       
       const [aqiResult, pollenResult, stormResult, wildfireResult] = await Promise.allSettled([
         fetchCombinedAirQuality(loc.latitude, loc.longitude),
@@ -115,8 +119,9 @@ export default function LocationDetailsScreen() {
 
   if (!location || !locationData) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Stack.Screen 
+      <GradientBackground>
+        <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
+          <Stack.Screen 
           options={{
             headerShown: true,
             title: 'Location Details',
@@ -127,17 +132,19 @@ export default function LocationDetailsScreen() {
             ),
           }}
         />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3b82f6" />
-          <Text style={styles.loadingText}>Loading location data...</Text>
-        </View>
-      </SafeAreaView>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#3b82f6" />
+            <Text style={styles.loadingText}>Loading location data...</Text>
+          </View>
+        </SafeAreaView>
+      </GradientBackground>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Stack.Screen 
+    <GradientBackground>
+      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
+        <Stack.Screen 
         options={{
           headerShown: true,
           title: location.name,
@@ -150,15 +157,21 @@ export default function LocationDetailsScreen() {
       />
       
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Location Header */}
+        {/* Location Header with Dropdown */}
         <View style={styles.header}>
-          <View style={styles.locationInfo}>
-            <Ionicons name="location" size={24} color="#3b82f6" />
-            <View style={styles.locationText}>
-              <Text style={styles.locationName}>{location.name}</Text>
-              <Text style={styles.locationAddress}>{location.address}</Text>
+          <TouchableOpacity 
+            style={styles.locationSelector}
+            onPress={() => setShowLocationPicker(true)}
+          >
+            <View style={styles.locationInfo}>
+              <Ionicons name="location" size={24} color="#491124" />
+              <View style={styles.locationText}>
+                <Text style={styles.locationName}>{location.name}</Text>
+                <Text style={styles.locationAddress}>{location.address}</Text>
+              </View>
+              <Ionicons name="chevron-down" size={20} color="#491124" style={styles.dropdownIcon} />
             </View>
-          </View>
+          </TouchableOpacity>
           
           {/* Quick Stats */}
           <View style={styles.quickStats}>
@@ -196,7 +209,7 @@ export default function LocationDetailsScreen() {
           
           {/* Lightning Card */}
           {locationData.lightning && locationData.lightning.probability >= 0 && (
-            <View style={styles.lightningCard}>
+            <Card>
               <View style={styles.cardHeader}>
                 <Text style={styles.cardTitle}>Lightning Risk</Text>
                 <Text style={styles.cardTimestamp}>
@@ -230,12 +243,12 @@ export default function LocationDetailsScreen() {
                   ]} 
                 />
               </View>
-            </View>
+            </Card>
           )}
 
           {/* Wildfire Card */}
           {locationData.wildfire && (locationData.wildfire.smokeRisk?.pm25 >= 0 || locationData.wildfire.dustRisk?.pm10 >= 0) && (
-            <View style={styles.wildfireCard}>
+            <Card>
               <View style={styles.cardHeader}>
                 <Text style={styles.cardTitle}>Wildfire & Smoke</Text>
                 <Text style={styles.cardTimestamp}>
@@ -316,11 +329,11 @@ export default function LocationDetailsScreen() {
                   </Text>
                 </View>
               )}
-            </View>
+            </Card>
           )}
 
           {/* Recommendations */}
-          <View style={styles.recommendationsCard}>
+          <Card>
             <Text style={styles.cardTitle}>Today's Recommendations</Text>
             <View style={styles.recommendations}>
               <View style={styles.recommendation}>
@@ -362,19 +375,76 @@ export default function LocationDetailsScreen() {
                 </View>
               )}
             </View>
-          </View>
+          </Card>
         </View>
 
         <View style={styles.bottomPadding} />
       </ScrollView>
-    </SafeAreaView>
+
+      {/* Location Picker Modal */}
+      <Modal
+        visible={showLocationPicker}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowLocationPicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Location</Text>
+              <TouchableOpacity onPress={() => setShowLocationPicker(false)}>
+                <Ionicons name="close" size={24} color="#111827" />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={locations}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.locationItem,
+                    item.id === location.id && styles.selectedLocationItem
+                  ]}
+                  onPress={() => {
+                    router.replace(`/location/${item.id}`);
+                    setShowLocationPicker(false);
+                  }}
+                >
+                  <View style={styles.locationItemContent}>
+                    <Ionicons 
+                      name={item.show_in_home ? "star" : "location-outline"} 
+                      size={20} 
+                      color={item.id === location.id ? "#491124" : "#6b7280"} 
+                    />
+                    <View style={styles.locationItemText}>
+                      <Text style={[
+                        styles.locationItemName,
+                        item.id === location.id && styles.selectedLocationItemName
+                      ]}>
+                        {item.name}
+                      </Text>
+                      <Text style={styles.locationItemAddress}>
+                        {item.address}
+                      </Text>
+                    </View>
+                    {item.id === location.id && (
+                      <Ionicons name="checkmark" size={20} color="#491124" />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+      </SafeAreaView>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
   },
   scrollView: {
     flex: 1,
@@ -393,15 +463,20 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   header: {
-    backgroundColor: 'white',
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
+  locationSelector: {
+    marginBottom: 20,
+  },
   locationInfo: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 20,
+  },
+  dropdownIcon: {
+    marginLeft: 'auto',
+    marginTop: 4,
   },
   locationText: {
     marginLeft: 12,
@@ -425,7 +500,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#f3f4f6',
     borderRadius: 8,
     marginHorizontal: 4,
   },
@@ -442,22 +517,6 @@ const styles = StyleSheet.create({
   },
   cardsContainer: {
     padding: 16,
-  },
-  lightningCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 24,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -511,22 +570,6 @@ const styles = StyleSheet.create({
   lightningProgress: {
     height: '100%',
     borderRadius: 4,
-  },
-  wildfireCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 24,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
   },
   wildfireSection: {
     marginBottom: 20,
@@ -594,22 +637,6 @@ const styles = StyleSheet.create({
     color: '#4b5563',
     lineHeight: 20,
   },
-  recommendationsCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 24,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#f3f4f6',
-  },
   recommendations: {
     marginTop: 16,
   },
@@ -626,5 +653,59 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 40,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  modalTitle: {
+    ...fonts.headline.h4,
+    color: '#111827',
+  },
+  locationItem: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  selectedLocationItem: {
+    backgroundColor: '#fef2f2',
+  },
+  locationItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  locationItemText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  locationItemName: {
+    ...fonts.body.regular,
+    fontFamily: fonts.weight.semibold,
+    color: '#111827',
+    marginBottom: 2,
+  },
+  selectedLocationItemName: {
+    color: '#491124',
+  },
+  locationItemAddress: {
+    ...fonts.body.small,
+    color: '#6b7280',
   },
 });

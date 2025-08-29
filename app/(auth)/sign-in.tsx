@@ -8,7 +8,6 @@ import {
   Alert,
   SafeAreaView,
   StyleSheet,
-  TextInput,
   TouchableOpacity
 } from 'react-native';
 import { Link, router } from 'expo-router';
@@ -17,6 +16,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import { useAuthStore } from '../../store/auth';
+import { Input } from '../../components/ui/Input';
+import { Button } from '../../components/ui/Button';
 
 const signInSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -77,22 +78,18 @@ export default function SignInScreen() {
                 control={control}
                 name="email"
                 render={({ field: { onChange, onBlur, value } }) => (
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.label}>Email *</Text>
-                    <TextInput
-                      style={[styles.input, errors.email && styles.inputError]}
-                      value={value}
-                      onChangeText={onChange}
-                      onBlur={onBlur}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      placeholder="Enter your email"
-                    />
-                    {errors.email && (
-                      <Text style={styles.errorText}>{errors.email.message}</Text>
-                    )}
-                  </View>
+                  <Input
+                    label="Email"
+                    required
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    placeholder="Enter your email"
+                    error={errors.email?.message}
+                  />
                 )}
               />
 
@@ -100,20 +97,16 @@ export default function SignInScreen() {
                 control={control}
                 name="password"
                 render={({ field: { onChange, onBlur, value } }) => (
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.label}>Password *</Text>
-                    <TextInput
-                      style={[styles.input, errors.password && styles.inputError]}
-                      value={value}
-                      onChangeText={onChange}
-                      onBlur={onBlur}
-                      secureTextEntry
-                      placeholder="Enter your password"
-                    />
-                    {errors.password && (
-                      <Text style={styles.errorText}>{errors.password.message}</Text>
-                    )}
-                  </View>
+                  <Input
+                    label="Password"
+                    required
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    secureTextEntry
+                    placeholder="Enter your password"
+                    error={errors.password?.message}
+                  />
                 )}
               />
 
@@ -122,18 +115,20 @@ export default function SignInScreen() {
               </Link>
             </View>
 
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
-              onPress={handleSubmit(onSubmit)}
-              disabled={loading}
-            >
-              <Text style={styles.buttonText}>
-                {loading ? 'Signing In...' : 'Sign In'}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.buttonContainer}>
+              <Button
+                title={loading ? 'Signing In...' : 'Sign In'}
+                onPress={handleSubmit(onSubmit)}
+                disabled={loading}
+                loading={loading}
+                fullWidth
+                variant="primary"
+                size="md"
+              />
+            </View>
 
             <View style={styles.linkContainer}>
-              <Text style={styles.linkText}>Don't have an account? </Text>
+              <Text style={styles.linkText}>Don&apos;t have an account? </Text>
               <Link href="/(auth)/sign-up">
                 <Text style={styles.linkButton}>Sign Up</Text>
               </Link>
@@ -148,7 +143,7 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent', // Allow gradient to show through
   },
   keyboardView: {
     flex: 1,
@@ -170,9 +165,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    color: '#111827',
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#491124',
     marginBottom: 8,
   },
   subtitle: {
@@ -183,33 +178,6 @@ const styles = StyleSheet.create({
   form: {
     marginBottom: 24,
   },
-  inputContainer: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: '#FFFFFF',
-    color: '#111827',
-  },
-  inputError: {
-    borderColor: '#EF4444',
-  },
-  errorText: {
-    color: '#EF4444',
-    fontSize: 14,
-    marginTop: 4,
-  },
   forgotLink: {
     alignSelf: 'flex-end',
     marginBottom: 24,
@@ -218,21 +186,8 @@ const styles = StyleSheet.create({
     color: '#2563EB',
     fontSize: 14,
   },
-  button: {
-    backgroundColor: '#2563EB',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    alignItems: 'center',
+  buttonContainer: {
     marginBottom: 16,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
   },
   linkContainer: {
     flexDirection: 'row',
