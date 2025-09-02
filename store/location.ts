@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase/client';
 import * as ExpoLocation from 'expo-location';
-import type { Location, LocationData, AQIData, PollenData } from '../types/location';
+import type { Location, LocationData, AQIData, PollenData, LightningData, WildFireData, WeatherData, MicrosoftWeatherData } from '../types/location';
 
 interface LocationState {
   locations: Location[];
@@ -197,11 +197,15 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
       // Import API functions
       const { fetchGoogleAirQuality } = await import('../lib/api/google-air-quality');
       const { fetchPollenData } = await import('../lib/api/pollen');
+      const { fetchWeatherData } = await import('../lib/api/weather');
+      const { fetchMicrosoftBreathingData } = await import('../lib/api/microsoft-weather');
 
-      // Fetch real AQI and pollen data
-      const [aqiData, pollenData] = await Promise.allSettled([
+      // Fetch real AQI, pollen, lightning, and Microsoft breathing data
+      const [aqiData, pollenData, lightningData, microsoftData] = await Promise.allSettled([
         fetchGoogleAirQuality(location.latitude, location.longitude),
         fetchPollenData(location.latitude, location.longitude),
+        fetchWeatherData(location.latitude, location.longitude),
+        fetchMicrosoftBreathingData(location.latitude, location.longitude),
       ]);
 
       // Handle AQI data (with fallback)
@@ -241,11 +245,80 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
         };
       }
 
+      // Handle lightning data (with fallback)
+      let lightning: LightningData;
+      if (lightningData.status === 'fulfilled') {
+        lightning = lightningData.value;
+      } else {
+        console.warn('Failed to fetch lightning data, using fallback:', lightningData.reason);
+        lightning = {
+          probability: 5,
+          level: 'Low',
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      // Handle Microsoft breathing data (with fallback)
+      let microsoft: MicrosoftWeatherData | undefined;
+      if (microsoftData.status === 'fulfilled') {
+        microsoft = {
+          currentAirQuality: microsoftData.value.currentAirQuality,
+          airQualityForecast: microsoftData.value.airQualityForecast,
+          severeAlerts: microsoftData.value.severeAlerts,
+          dailyIndices: microsoftData.value.dailyIndices,
+          // Extract pollen and UV data from daily forecast
+          pollenForecast: microsoftData.value.dailyForecast ? {
+            forecasts: microsoftData.value.dailyForecast.forecasts.map(forecast => ({
+              date: forecast.date,
+              pollen: {
+                grass: forecast.airAndPollen.find(item => item.name === 'Grass') || { value: 0, category: 'Low' },
+                tree: forecast.airAndPollen.find(item => item.name === 'Tree') || { value: 0, category: 'Low' },
+                weed: forecast.airAndPollen.find(item => item.name === 'Weed') || { value: 0, category: 'Low' },
+                mold: forecast.airAndPollen.find(item => item.name === 'Mold') || { value: 0, category: 'Low' },
+              },
+              uvIndex: forecast.airAndPollen.find(item => item.name === 'UVIndex') || { value: 0, category: 'Low' },
+            })),
+            timestamp: microsoftData.value.timestamp,
+          } : undefined,
+        };
+      } else {
+        console.warn('Failed to fetch Microsoft breathing data:', microsoftData.reason);
+        // Microsoft data is optional
+      }
+
+      // Mock wildfire data for now
+      const wildfire: WildFireData = {
+        smokeRisk: {
+          level: 'Low',
+          pm25: 5,
+          visibility: 10,
+        },
+        dustRisk: {
+          level: 'Low',
+          pm10: 15,
+          visibility: 10,
+        },
+        fireActivity: {
+          nearbyFires: 0,
+          closestFireDistance: -1,
+          largestFireSize: -1,
+        },
+        outlook: {
+          next24Hours: 'Stable',
+          confidence: 'Moderate',
+          details: 'No significant fire activity expected.',
+        },
+        timestamp: new Date().toISOString(),
+      };
+
       set({ 
         currentLocation: {
           location,
           aqi,
           pollen,
+          lightning,
+          wildfire,
+          microsoft,
         },
         loading: false 
       });

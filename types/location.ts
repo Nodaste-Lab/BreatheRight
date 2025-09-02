@@ -68,10 +68,84 @@ export interface WildFireData {
   error?: string;
 }
 
+export interface WeatherData {
+  temperature: {
+    current: number;
+    feelsLike: number;
+    unit: string; // 'C' or 'F'
+  };
+  conditions: {
+    phrase: string; // e.g., "Partly cloudy", "Thunderstorms"
+    iconCode: number;
+    isDayTime: boolean;
+  };
+  details: {
+    humidity: number; // percentage
+    windSpeed: number;
+    windDirection: string;
+    visibility: number;
+    uvIndex: number;
+    pressure: number;
+    cloudCover: number; // percentage
+  };
+  precipitation: {
+    hasPrecipitation: boolean;
+    type: string | null; // 'Rain', 'Snow', etc.
+    pastHour: number; // mm
+    past24Hours: number; // mm
+  };
+  timestamp: string;
+  error?: string;
+}
+
+export interface SevereWeatherAlert {
+  id: number;
+  category: string;
+  priority: number;
+  description: string;
+  severity: string;
+  startTime: string;
+  endTime: string;
+  area: string;
+  source: string;
+}
+
+export interface DailyHealthIndex {
+  name: string;
+  value: number;
+  category: string;
+  description: string;
+  date: string;
+}
+
+export interface MicrosoftWeatherData {
+  currentAirQuality?: AQIData;
+  airQualityForecast?: AQIData[];
+  severeAlerts?: {
+    alerts: SevereWeatherAlert[];
+    timestamp: string;
+  };
+  dailyIndices?: {
+    indices: DailyHealthIndex[];
+    timestamp: string;
+  };
+  pollenForecast?: {
+    forecasts: Array<{
+      date: string;
+      pollen: {
+        grass: { value: number; category: string; };
+        tree: { value: number; category: string; };
+        weed: { value: number; category: string; };
+        mold: { value: number; category: string; };
+      };
+      uvIndex: { value: number; category: string; };
+    }>;
+    timestamp: string;
+  };
+}
+
 export interface LocationData {
   location: Location;
   aqi: AQIData;
-  pollen: PollenData;
-  lightning: LightningData;
-  wildfire: WildFireData;
+  microsoft?: MicrosoftWeatherData;
 }

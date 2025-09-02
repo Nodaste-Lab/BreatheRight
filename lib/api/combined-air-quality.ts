@@ -4,6 +4,7 @@ import { fetchAirPollutionData } from './openweather';
 import { fetchWAQIData } from './waqi';
 import { fetchPurpleAirData } from './purpleair';
 import { fetchAirNowObservations } from './airnow';
+import { fetchMicrosoftCurrentAirQuality } from './microsoft-weather';
 
 export interface CombinedAQIData extends AQIData {
   sources: {
@@ -12,6 +13,7 @@ export interface CombinedAQIData extends AQIData {
     waqi?: boolean;
     purpleair?: boolean;
     airnow?: boolean;
+    microsoft?: boolean;
   };
   confidence: 'high' | 'medium' | 'low' | 'conflicting';
   discrepancy?: {
@@ -26,6 +28,7 @@ export interface CombinedAQIData extends AQIData {
     waqi?: AQIData;
     purpleair?: AQIData;
     airnow?: AQIData;
+    microsoft?: AQIData;
   };
 }
 
@@ -227,6 +230,112 @@ function analyzeFiveSourceDiscrepancy(
 }
 
 /**
+ * Analyze discrepancy between six air quality sources and determine best combination strategy
+ */
+function analyzeSixSourceDiscrepancy(
+  googleAQI?: number, 
+  openWeatherAQI?: number,
+  waqiAQI?: number,
+  purpleairAQI?: number,
+  airnowAQI?: number,
+  microsoftAQI?: number
+): { value: number; discrepancy?: CombinedAQIData['discrepancy'] } {
+  // Collect valid values
+  const values: { source: string; value: number }[] = [];
+  if (googleAQI !== undefined && googleAQI >= 0) values.push({ source: 'Google', value: googleAQI });
+  if (openWeatherAQI !== undefined && openWeatherAQI >= 0) values.push({ source: 'OpenWeather', value: openWeatherAQI });
+  if (waqiAQI !== undefined && waqiAQI >= 0) values.push({ source: 'WAQI', value: waqiAQI });
+  if (purpleairAQI !== undefined && purpleairAQI >= 0) values.push({ source: 'PurpleAir', value: purpleairAQI });
+  if (airnowAQI !== undefined && airnowAQI >= 0) values.push({ source: 'AirNow', value: airnowAQI });
+  if (microsoftAQI !== undefined && microsoftAQI >= 0) values.push({ source: 'Microsoft', value: microsoftAQI });
+  
+  if (values.length === 0) {
+    return { value: -1 };
+  }
+  
+  if (values.length === 1) {
+    return { value: values[0].value };
+  }
+  
+  // Calculate statistics for multiple values
+  const sortedValues = values.map(v => v.value).sort((a, b) => a - b);
+  const min = sortedValues[0];
+  const max = sortedValues[sortedValues.length - 1];
+  const maxDifference = max - min;
+  const mean = sortedValues.reduce((sum, val) => sum + val, 0) / sortedValues.length;
+  const median = sortedValues.length % 2 === 0 
+    ? (sortedValues[sortedValues.length / 2 - 1] + sortedValues[sortedValues.length / 2]) / 2
+    : sortedValues[Math.floor(sortedValues.length / 2)];
+  
+  let strategy: 'average' | 'weighted_average' | 'median' | 'favor_majority' | 'flag_uncertainty';
+  let finalValue: number;
+  let details: string;
+  
+  console.log(`📊 Six-source AQI comparison:`, values.map(v => `${v.source}=${v.value}`).join(', '));
+  
+  // Determine if there's significant discrepancy
+  const isSignificantDiscrepancy = maxDifference > 30;
+  
+  if (values.length >= 5) {
+    // Five or six sources available
+    if (maxDifference > 60) {
+      // Very large discrepancy - use median to avoid outliers
+      strategy = 'median';
+      finalValue = Math.round(median);
+      details = `Very large variance (${maxDifference}pts). Using median value.`;
+      console.warn(`⚠️  Large ${values.length}-source discrepancy: range ${min}-${max}, using median ${finalValue}`);
+    } else if (maxDifference > 40) {
+      // Moderate discrepancy - weighted average favoring official sources
+      strategy = 'weighted_average';
+      const weights = {
+        google: 0.2,
+        airnow: airnowAQI !== undefined ? 0.25 : 0, // EPA official source
+        microsoft: microsoftAQI !== undefined ? 0.2 : 0, // Microsoft official source
+        purpleair: purpleairAQI !== undefined ? 0.2 : 0, // Very reliable for PM2.5
+        waqi: waqiAQI !== undefined ? 0.1 : 0,
+        openweather: 0.05
+      };
+      // Normalize weights to sum to 1
+      const totalWeight = Object.values(weights).reduce((sum, w) => sum + w, 0);
+      const normalizedWeights = Object.fromEntries(
+        Object.entries(weights).map(([key, value]) => [key, value / totalWeight])
+      );
+      
+      finalValue = Math.round(
+        (googleAQI || 0) * normalizedWeights.google + 
+        (airnowAQI || 0) * normalizedWeights.airnow +
+        (microsoftAQI || 0) * normalizedWeights.microsoft +
+        (purpleairAQI || 0) * normalizedWeights.purpleair +
+        (waqiAQI || 0) * normalizedWeights.waqi + 
+        (openWeatherAQI || 0) * normalizedWeights.openweather
+      );
+      details = `Moderate variance (${maxDifference}pts). Weighted average favoring official sources.`;
+      console.log(`📊 ${values.length}-source weighted average: ${finalValue}`);
+    } else {
+      // Good agreement - simple average
+      strategy = 'average';
+      finalValue = Math.round(mean);
+      details = `Good agreement across sources.`;
+    }
+  } else {
+    // Fewer sources - use median for robustness
+    strategy = 'median';
+    finalValue = Math.round(median);
+    details = `${values.length}-source median value.`;
+  }
+  
+  return {
+    value: finalValue,
+    discrepancy: isSignificantDiscrepancy ? {
+      detected: true,
+      maxDifference,
+      strategy,
+      details
+    } : undefined
+  };
+}
+
+/**
  * Merge pollutant data from five sources
  * Takes the average when multiple sources are available, otherwise uses whichever is available
  */
@@ -317,91 +426,110 @@ function determineFiveSourceConfidence(
 }
 
 /**
- * Fetch air quality data from five sources and combine them intelligently
+ * Merge pollutant data from six sources
+ */
+function mergeSixSourcePollutants(
+  googlePollutants?: AQIData['pollutants'],
+  openWeatherPollutants?: AQIData['pollutants'],
+  waqiPollutants?: AQIData['pollutants'],
+  purpleairPollutants?: AQIData['pollutants'],
+  airnowPollutants?: AQIData['pollutants'],
+  microsoftPollutants?: AQIData['pollutants']
+): AQIData['pollutants'] {
+  // Collect all available pollutant values
+  const allPollutants = [googlePollutants, openWeatherPollutants, waqiPollutants, purpleairPollutants, airnowPollutants, microsoftPollutants].filter(Boolean);
+  
+  if (allPollutants.length === 0) {
+    return { pm25: 0, pm10: 0, o3: 0, no2: 0, so2: 0, co: 0 };
+  }
+
+  // Average each pollutant across available sources
+  const merged = {
+    pm25: Math.round(allPollutants.reduce((sum, p) => sum + (p!.pm25 || 0), 0) / allPollutants.length),
+    pm10: Math.round(allPollutants.reduce((sum, p) => sum + (p!.pm10 || 0), 0) / allPollutants.length),
+    o3: Math.round(allPollutants.reduce((sum, p) => sum + (p!.o3 || 0), 0) / allPollutants.length),
+    no2: Math.round(allPollutants.reduce((sum, p) => sum + (p!.no2 || 0), 0) / allPollutants.length),
+    so2: Math.round(allPollutants.reduce((sum, p) => sum + (p!.so2 || 0), 0) / allPollutants.length),
+    co: Math.round(allPollutants.reduce((sum, p) => sum + (p!.co || 0), 0) / allPollutants.length)
+  };
+
+  return merged;
+}
+
+/**
+ * Determine confidence level based on six data sources and discrepancies
+ */
+function determineSixSourceConfidence(
+  googleSuccess: boolean, 
+  openWeatherSuccess: boolean,
+  waqiSuccess: boolean,
+  purpleairSuccess: boolean,
+  airnowSuccess: boolean,
+  microsoftSuccess: boolean,
+  discrepancy?: CombinedAQIData['discrepancy']
+): CombinedAQIData['confidence'] {
+  const successCount = [googleSuccess, openWeatherSuccess, waqiSuccess, purpleairSuccess, airnowSuccess, microsoftSuccess].filter(Boolean).length;
+  
+  if (successCount === 0) return 'low';
+  if (successCount === 1) return 'medium';
+  
+  // Multiple sources available
+  if (discrepancy?.detected) {
+    // If there's significant discrepancy, confidence depends on strategy
+    return discrepancy.strategy === 'median' ? 'medium' : 'conflicting';
+  }
+  
+  // Good agreement between sources
+  return successCount >= 5 ? 'high' : 'medium';
+}
+
+/**
+ * Fetch air quality data from Microsoft only
  */
 export async function fetchCombinedAirQuality(lat: number, lon: number): Promise<CombinedAQIData> {
-  // Fetch from all five sources in parallel
-  const [googleResult, openWeatherResult, waqiResult, purpleairResult, airnowResult] = await Promise.allSettled([
-    fetchGoogleAirQuality(lat, lon),
-    fetchAirPollutionData(lat, lon),
-    fetchWAQIData(lat, lon),
-    fetchPurpleAirData(lat, lon),
-    convertAirNowToAQI(lat, lon)
+  // Use only Microsoft data
+  const microsoftResult = await Promise.allSettled([
+    fetchMicrosoftCurrentAirQuality(lat, lon)
   ]);
 
-  const googleData = googleResult.status === 'fulfilled' ? googleResult.value : undefined;
-  const openWeatherData = openWeatherResult.status === 'fulfilled' ? openWeatherResult.value : undefined;
-  const waqiData = waqiResult.status === 'fulfilled' ? waqiResult.value : undefined;
-  const purpleairData = purpleairResult.status === 'fulfilled' ? purpleairResult.value : undefined;
-  const airnowData = airnowResult.status === 'fulfilled' ? airnowResult.value : undefined;
+  const microsoftData = microsoftResult[0].status === 'fulfilled' ? microsoftResult[0].value : undefined;
 
   // Log results for debugging
-  if (googleResult.status === 'rejected') {
-    console.log('Google Air Quality API failed:', googleResult.reason?.message || 'Unknown error');
+  if (microsoftResult[0].status === 'rejected') {
+    console.log('Microsoft Air Quality API failed:', microsoftResult[0].reason?.message || 'Unknown error');
   } else {
-    console.log('Google Air Quality API succeeded, AQI:', googleData?.aqi);
+    console.log('Microsoft Air Quality API succeeded, AQI:', microsoftData?.aqi);
   }
 
-  if (openWeatherResult.status === 'rejected') {
-    console.log('OpenWeather Air Pollution API failed:', openWeatherResult.reason?.message || 'Unknown error');
-  } else {
-    console.log('OpenWeather Air Pollution API succeeded, AQI:', openWeatherData?.aqi);
-  }
-
-  if (waqiResult.status === 'rejected') {
-    console.log('WAQI API failed:', waqiResult.reason?.message || 'Unknown error');
-  } else {
-    console.log('WAQI API succeeded, AQI:', waqiData?.aqi);
-  }
-
-  if (purpleairResult.status === 'rejected') {
-    console.log('PurpleAir API failed:', purpleairResult.reason?.message || 'Unknown error');
-  } else {
-    console.log('PurpleAir API succeeded, AQI:', purpleairData?.aqi);
-  }
-
-  if (airnowResult.status === 'rejected') {
-    console.log('AirNow API failed:', airnowResult.reason?.message || 'Unknown error');
-  } else {
-    console.log('AirNow API succeeded, AQI:', airnowData?.aqi);
-  }
-
-  // Analyze discrepancies and combine the data
-  const aqiAnalysis = analyzeFiveSourceDiscrepancy(googleData?.aqi, openWeatherData?.aqi, waqiData?.aqi, purpleairData?.aqi, airnowData?.aqi);
-  const combinedAQI = aqiAnalysis.value;
-  const mergedPollutants = mergeFiveSourcePollutants(googleData?.pollutants, openWeatherData?.pollutants, waqiData?.pollutants, purpleairData?.pollutants, airnowData?.pollutants);
-  const level = determineLevel(combinedAQI);
-  const confidence = determineFiveSourceConfidence(
-    googleResult.status === 'fulfilled',
-    openWeatherResult.status === 'fulfilled',
-    waqiResult.status === 'fulfilled',
-    purpleairResult.status === 'fulfilled',
-    airnowResult.status === 'fulfilled',
-    aqiAnalysis.discrepancy
-  );
+  // Use Microsoft data directly since it's our only source
+  const combinedAQI = microsoftData?.aqi || -1;
+  const level = microsoftData?.level || 'Unknown';
+  const pollutants = microsoftData?.pollutants || { pm25: -1, pm10: -1, o3: -1, no2: -1, so2: -1, co: -1 };
+  const confidence: CombinedAQIData['confidence'] = microsoftData ? 'high' : 'low';
 
   // Build the combined result
   const result: CombinedAQIData = {
     aqi: combinedAQI,
     level,
-    pollutants: mergedPollutants,
-    timestamp: new Date().toISOString(),
+    pollutants,
+    timestamp: microsoftData?.timestamp || new Date().toISOString(),
     sources: {
-      google: googleResult.status === 'fulfilled',
-      openweather: openWeatherResult.status === 'fulfilled',
-      waqi: waqiResult.status === 'fulfilled',
-      purpleair: purpleairResult.status === 'fulfilled',
-      airnow: airnowResult.status === 'fulfilled'
+      google: false,
+      openweather: false,
+      waqi: false,
+      purpleair: false,
+      airnow: false,
+      microsoft: microsoftResult[0].status === 'fulfilled'
     },
     confidence,
-    discrepancy: aqiAnalysis.discrepancy,
     rawData: {
-      google: googleData,
-      openweather: openWeatherData,
-      waqi: waqiData,
-      purpleair: purpleairData,
-      airnow: airnowData
-    }
+      microsoft: microsoftData
+    },
+    ...(microsoftData && { 
+      description: (microsoftData as any).description,
+      dominantPollutant: (microsoftData as any).dominantPollutant,
+      color: (microsoftData as any).color
+    })
   };
 
   // Add error if no data available
@@ -413,22 +541,13 @@ export async function fetchCombinedAirQuality(lat: number, lon: number): Promise
 }
 
 /**
- * Get a descriptive message about data sources
+ * Get a descriptive message about data sources (Microsoft-only)
  */
 export function getDataSourceMessage(sources: CombinedAQIData['sources']): string {
-  const activeSources = [];
-  if (sources.google) activeSources.push('Google');
-  if (sources.openweather) activeSources.push('OpenWeather');
-  if (sources.waqi) activeSources.push('WAQI');
-  if (sources.purpleair) activeSources.push('PurpleAir');
-  if (sources.airnow) activeSources.push('AirNow');
-  
-  if (activeSources.length === 0) return 'No data available';
-  if (activeSources.length === 1) return `Data from ${activeSources[0]}`;
-  if (activeSources.length === 2) return `Combined: ${activeSources.join(' + ')}`;
-  if (activeSources.length === 3) return `Triple-source: ${activeSources.join(' + ')}`;
-  if (activeSources.length === 4) return `Quad-source: ${activeSources.join(' + ')}`;
-  return `Penta-source: ${activeSources.join(' + ')}`;
+  if (sources.microsoft) {
+    return 'Data from Microsoft Azure Maps';
+  }
+  return 'No air quality data available';
 }
 
 /**

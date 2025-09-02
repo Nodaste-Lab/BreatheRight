@@ -9,14 +9,19 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.benogren.breatheright",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.benogren.breatheright"
     },
     "plugins": [
       "expo-router",
@@ -44,6 +49,12 @@
         "projectId": "44b52b9e-4c00-4da6-be27-53ac3f6f2186"
       }
     },
-    "owner": "benogren"
+    "owner": "benogren",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/44b52b9e-4c00-4da6-be27-53ac3f6f2186"
+    }
   }
 }

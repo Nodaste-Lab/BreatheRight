@@ -15,6 +15,7 @@ import {
 } from '../../lib/colors/environmental-colors';
 import { Card } from '../ui/Card';
 import { colors } from '../../lib/colors/theme';
+import { SevereWeatherAlertCard } from '../alerts/SevereWeatherAlert';
 
 interface LocationFeedCardProps {
   data: LocationData;
@@ -23,7 +24,7 @@ interface LocationFeedCardProps {
 }
 
 export function LocationFeedCard({ data, onPress, onRemove }: LocationFeedCardProps) {
-  const { location, aqi, pollen, lightning, wildfire } = data;
+  const { location, aqi, pollen, lightning, wildfire, weather, microsoft } = data;
   
   // Check if AQI has source information (from combined API)
   const aqiSources = (aqi as any)?.sources;
@@ -135,6 +136,66 @@ export function LocationFeedCard({ data, onPress, onRemove }: LocationFeedCardPr
 
       <Text style={styles.sectionTitle}>Right Now</Text>
       
+      {/* Weather Information */}
+      {weather && !weather.error && (
+        <View style={styles.weatherContainer}>
+          <View style={styles.weatherMainInfo}>
+            <Text style={styles.weatherTemperature}>
+              {Math.round(weather.temperature.current)}°{weather.temperature.unit === 'C' ? 'C' : 'F'}
+            </Text>
+            <View style={styles.weatherDetails}>
+              <Text style={styles.weatherConditions}>{weather.conditions.phrase}</Text>
+              <Text style={styles.weatherFeelsLike}>
+                Feels like {Math.round(weather.temperature.feelsLike)}°
+              </Text>
+            </View>
+          </View>
+          <View style={styles.weatherExtraInfo}>
+            <Text style={styles.weatherExtraText}>
+              💧 {weather.details.humidity}% • 🌪️ {Math.round(weather.details.windSpeed)} km/h • ☀️ UV {weather.details.uvIndex}
+            </Text>
+          </View>
+        </View>
+      )}
+
+
+      {/* Severe Weather Alerts */}
+      {microsoft?.severeAlerts?.alerts && microsoft.severeAlerts.alerts.length > 0 && (
+        <View style={styles.alertsContainer}>
+          <Text style={styles.alertsTitle}>⚠️ Severe Weather Alerts</Text>
+          {microsoft.severeAlerts.alerts.slice(0, 2).map((alert, index) => (
+            <SevereWeatherAlertCard 
+              key={alert.id || index} 
+              alert={alert}
+              onPress={() => {
+                // Could open detailed alert view
+                console.log('Alert pressed:', alert.description);
+              }}
+            />
+          ))}
+        </View>
+      )}
+
+      {/* Health Indices (UV, Air Quality, etc.) */}
+      {microsoft?.dailyIndices?.indices && microsoft.dailyIndices.indices.length > 0 && (
+        <View style={styles.indicesContainer}>
+          <Text style={styles.indicesTitle}>Health Indices</Text>
+          <View style={styles.indicesGrid}>
+            {microsoft.dailyIndices.indices
+              .filter(index => ['UV Index', 'Air Quality', 'Outdoor Activity', 'Running'].includes(index.name))
+              .slice(0, 4)
+              .map((index, i) => (
+                <View key={i} style={styles.indexCard}>
+                  <Text style={styles.indexValue}>{index.value}</Text>
+                  <Text style={styles.indexName}>{index.name}</Text>
+                  <Text style={styles.indexCategory}>{index.category}</Text>
+                </View>
+              ))
+            }
+          </View>
+        </View>
+      )}
+      
       <View style={styles.scoresContainer}>
         {/* AQI Score */}
         <View style={styles.scoreCard}>
@@ -199,23 +260,10 @@ export function LocationFeedCard({ data, onPress, onRemove }: LocationFeedCardPr
       {aqiSources && (
         <View style={styles.dataSourceContainer}>
           <Text style={styles.dataSourceText}>
-            {aqiDiscrepancy?.detected 
-              ? `⚠️ ${aqiDiscrepancy.details}`
-              : (() => {
-                  const activeSources = [];
-                  if (aqiSources.google) activeSources.push('Google');
-                  if (aqiSources.openweather) activeSources.push('OpenWeather');
-                  if (aqiSources.waqi) activeSources.push('WAQI');
-                  if (aqiSources.purpleair) activeSources.push('PurpleAir');
-                  if (aqiSources.airnow) activeSources.push('AirNow');
-                  
-                  if (activeSources.length === 0) return '⚠️ Using estimated data';
-                  if (activeSources.length === 1) return `📊 Source: ${activeSources[0]}`;
-                  if (activeSources.length === 2) return `📊 Combined: ${activeSources.join(' + ')}`;
-                  if (activeSources.length === 3) return `📊 Triple-source: ${activeSources.join(' + ')}`;
-                  if (activeSources.length === 4) return `📊 Quad-source: ${activeSources.join(' + ')}`;
-                  return `📊 Penta-source: ${activeSources.join(' + ')}`;
-                })()}
+            {aqiSources.microsoft 
+              ? '📊 Data from Microsoft Azure Maps'
+              : '⚠️ No air quality data available'
+            }
           </Text>
         </View>
       )}
@@ -268,11 +316,13 @@ const styles = StyleSheet.create({
     ...fonts.headline.h4,
     color: colors.burgundy,
     flexWrap: 'wrap',
+    fontWeight: '400',
   },
   locationDescriptionBody: {
     ...fonts.body.regular,
     color: colors.burgundy,
     flexWrap: 'wrap',
+    fontWeight: "400",
   },
   locationInfo: {
     flexDirection: 'row',
@@ -390,6 +440,133 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   dataSourceText: {
+    ...fonts.body.tiny,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  weatherContainer: {
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  weatherMainInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  weatherTemperature: {
+    ...fonts.headline.h2,
+    color: colors.burgundy,
+    marginRight: 16,
+    fontWeight: 'bold',
+  },
+  weatherDetails: {
+    flex: 1,
+  },
+  weatherConditions: {
+    ...fonts.headline.h4,
+    color: colors.burgundy,
+    marginBottom: 2,
+  },
+  weatherFeelsLike: {
+    ...fonts.body.regular,
+    color: colors.text.secondary,
+    fontWeight: '400',
+  },
+  weatherExtraInfo: {
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  weatherExtraText: {
+    ...fonts.body.small,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  microsoftContainer: {
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  microsoftTitle: {
+    ...fonts.body.small,
+    color: colors.burgundy,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  microsoftAQIInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  microsoftAQI: {
+    ...fonts.headline.h3,
+    fontWeight: 'bold',
+  },
+  microsoftDescription: {
+    ...fonts.body.regular,
+    color: colors.text.secondary,
+    flex: 1,
+    textAlign: 'right',
+    fontWeight: '400',
+  },
+  dominantPollutant: {
+    ...fonts.body.tiny,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  alertsContainer: {
+    marginBottom: 16,
+  },
+  alertsTitle: {
+    ...fonts.headline.h4,
+    color: colors.burgundy,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  indicesContainer: {
+    marginBottom: 16,
+  },
+  indicesTitle: {
+    ...fonts.headline.h4,
+    color: colors.burgundy,
+    marginBottom: 12,
+  },
+  indicesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  indexCard: {
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    padding: 12,
+    width: '48%',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
+  indexValue: {
+    ...fonts.headline.h3,
+    color: colors.burgundy,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  indexName: {
+    ...fonts.body.tiny,
+    color: colors.text.primary,
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  indexCategory: {
     ...fonts.body.tiny,
     color: colors.text.secondary,
     textAlign: 'center',
