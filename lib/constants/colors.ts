@@ -1,47 +1,69 @@
 /**
  * Centralized color constants for the application
+ * Aligned with Figma design system
  * These match the CSS custom properties defined in global.css
  */
 
 export const colors = {
-  // Brand colors
-  primary: '#491124', // --neutral-90 in global.css
-  secondary: '#4E5050',
+  // Brand colors - Primary maroon from Figma
+  primary: '#491124', // Main brand color
+  secondary: '#4E5050', // Secondary text/UI elements
 
-  // AQI colors
+  // AQI colors - Exact from Figma design
   aqi: {
-    good: '#CEF4FF',
-    moderate: '#F8FFCE',
-    poor: '#FFE4CE',
-    unhealthy: '#FFCECE',
-    veryUnhealthy: '#C5B4DF',
-    hazardous: '#B195E8',
+    good: '#CEF4FF',       // Light blue
+    moderate: '#F8FFCE',   // Light yellow
+    poor: '#FFE4CE',       // Light orange (Unhealthy for Sensitive)
+    unhealthy: '#FFCECE',  // Light red
+    veryUnhealthy: '#C5B4DF', // Light purple
+    hazardous: '#B195E8',  // Darker purple
   },
   
-  // AQI text colors
-  aqiText: {
-    good: '#0B7A8F',
-    moderate: '#7A8F0B',
-    poor: '#8F5A0B',
-    unhealthy: '#8F0B0B',
-    veryUnhealthy: '#6B4C8F',
-    hazardous: '#5A3D8F',
+  // Pollen level colors - From Figma allergen badges
+  pollen: {
+    low: '#CEF4FF',       // Same as AQI good
+    medium: '#F8FFCE',    // Same as AQI moderate
+    high: '#FFCECE',      // Same as AQI unhealthy
+    veryHigh: '#B195E8',  // Purple for very high
+  },
+
+  // Lightning/Weather colors - From Figma weather effects
+  lightning: {
+    none: '#CEF4FF',      // Light blue
+    low: '#F8FFCE',       // Light yellow
+    medium: '#FFE4CE',    // Light orange
+    high: '#FFCECE',      // Light red
   },
   
-  // Neutral colors
+  // Text colors for contrast - Used in badges/cards
+  contrastText: {
+    primary: '#491124',   // Dark maroon for all light backgrounds
+    secondary: '#4E5050', // Gray for secondary text
+  },
+  
+  // Neutral colors - From Figma backgrounds
   neutral: {
     white: '#FFFFFF',
+    whiteAlpha65: 'rgba(255, 255, 255, 0.65)', // Card backgrounds
+    whiteAlpha20: 'rgba(255, 255, 255, 0.2)',  // Subtle overlays
     black: '#000000',
+    blackAlpha20: 'rgba(0, 0, 0, 0.2)',        // Divider lines
+    blackAlpha40: 'rgba(0, 0, 0, 0.4)',        // Chart borders
     gray50: '#F9FAFB',
     gray100: '#F3F4F6',
-    gray200: '#E5E7EB',
     gray300: '#D1D5DB',
-    gray400: '#9CA3AF',
     gray500: '#6B7280',
-    gray600: '#4B5563',
     gray700: '#374151',
-    gray800: '#1F2937',
     gray900: '#111827',
+  },
+
+  // Background gradients - From Figma designs
+  gradients: {
+    mainBackground: {
+      from: '#FFF3F2', // Light pink
+      to: '#CEF4FF',   // Light blue
+    },
+    cardOverlay: 'rgba(255, 255, 255, 0.65)',
   },
   
   // Semantic colors
@@ -52,11 +74,18 @@ export const colors = {
     info: '#3B82F6',
   },
   
-  // Text colors
+  // Text colors - From Figma typography
   text: {
-    primary: '#491124',
-    secondary: '#653C4A',
-    muted: '#6B7280',
-    light: '#9CA3AF',
+    primary: '#491124',   // Main text color
+    secondary: '#4E5050', // Secondary gray text
+    muted: '#6B7280',     // Muted/disabled
+    light: '#9CA3AF',     // Very light text
+  },
+
+  // Special UI colors from Figma
+  ui: {
+    activeBorder: '#01687D',     // Selected location highlight
+    activeBackground: 'rgba(1, 104, 125, 0.1)', // Selected location bg
+    chartBarActive: '#491124',   // Active/current chart bar border
   },
 } as const;

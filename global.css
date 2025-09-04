@@ -2,8 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom AQI Colors */
+/* Import Figma design fonts */
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+/* Design System Colors - Aligned with Figma */
 :root {
+  /* Primary Brand Colors */
+  --primary: #491124;
+  --secondary: #4E5050;
+  
   /* AQI Level Colors */
   --aqi-good: #CEF4FF;
   --aqi-moderate: #F8FFCE;
@@ -12,19 +21,48 @@
   --aqi-very-unhealthy: #C5B4DF;
   --aqi-hazardous: #B195E8;
 
-  --neutral-90: #491124;
+  /* Pollen Level Colors */
+  --pollen-low: #CEF4FF;
+  --pollen-medium: #F8FFCE;
+  --pollen-high: #FFCECE;
+  --pollen-very-high: #B195E8;
 
-  /* AQI Text Colors */
-  --aqi-good-text: #0B7A8F;
-  --aqi-moderate-text: #7A8F0B;
-  --aqi-poor-text: #8F5A0B;
-  --aqi-unhealthy-text: #8F0B0B;
-  --aqi-very-unhealthy-text: #6B4C8F;
-  --aqi-hazardous-text: #5A3D8F;
+  /* Lightning/Weather Colors */
+  --lightning-none: #CEF4FF;
+  --lightning-low: #F8FFCE;
+  --lightning-medium: #FFE4CE;
+  --lightning-high: #FFCECE;
+
+  /* Text Colors - Use primary for all badge text */
+  --text-primary: #491124;
+  --text-secondary: #4E5050;
+  --text-muted: #6B7280;
+  --text-light: #9CA3AF;
+
+  /* UI Colors */
+  --ui-active-border: #01687D;
+  --ui-active-bg: rgba(1, 104, 125, 0.1);
+  --ui-chart-active: #491124;
+  
+  /* Neutral Colors */
+  --white: #FFFFFF;
+  --white-alpha-65: rgba(255, 255, 255, 0.65);
+  --white-alpha-20: rgba(255, 255, 255, 0.2);
+  --black: #000000;
+  --black-alpha-20: rgba(0, 0, 0, 0.2);
+  --black-alpha-40: rgba(0, 0, 0, 0.4);
+  
+  /* Background Gradients */
+  --gradient-from: #FFF3F2;
+  --gradient-to: #CEF4FF;
+
+  /* Legacy support */
+  --neutral-90: #491124;
 }
 
 /* Basic utility classes that React Native CSS Interop can handle */
 @layer utilities {
+  /* AQI Background Colors */
   .bg-aqi-good { background-color: var(--aqi-good); }
   .bg-aqi-moderate { background-color: var(--aqi-moderate); }
   .bg-aqi-poor { background-color: var(--aqi-poor); }
@@ -32,17 +70,38 @@
   .bg-aqi-very-unhealthy { background-color: var(--aqi-very-unhealthy); }
   .bg-aqi-hazardous { background-color: var(--aqi-hazardous); }
   
-  .text-aqi-good { color: var(--aqi-good-text); }
-  .text-aqi-moderate { color: var(--aqi-moderate-text); }
-  .text-aqi-poor { color: var(--aqi-poor-text); }
-  .text-aqi-unhealthy { color: var(--aqi-unhealthy-text); }
-  .text-aqi-very-unhealthy { color: var(--aqi-very-unhealthy-text); }
-  .text-aqi-hazardous { color: var(--aqi-hazardous-text); }
+  /* Pollen Background Colors */
+  .bg-pollen-low { background-color: var(--pollen-low); }
+  .bg-pollen-medium { background-color: var(--pollen-medium); }
+  .bg-pollen-high { background-color: var(--pollen-high); }
+  .bg-pollen-very-high { background-color: var(--pollen-very-high); }
   
-  .border-aqi-good { border-color: var(--aqi-good-text); }
-  .border-aqi-moderate { border-color: var(--aqi-moderate-text); }
-  .border-aqi-poor { border-color: var(--aqi-poor-text); }
-  .border-aqi-unhealthy { border-color: var(--aqi-unhealthy-text); }
-  .border-aqi-very-unhealthy { border-color: var(--aqi-very-unhealthy-text); }
-  .border-aqi-hazardous { border-color: var(--aqi-hazardous-text); }
+  /* Lightning Background Colors */
+  .bg-lightning-none { background-color: var(--lightning-none); }
+  .bg-lightning-low { background-color: var(--lightning-low); }
+  .bg-lightning-medium { background-color: var(--lightning-medium); }
+  .bg-lightning-high { background-color: var(--lightning-high); }
+  
+  /* Text Colors - All badges use primary text color per Figma */
+  .text-primary { color: var(--text-primary); }
+  .text-secondary { color: var(--text-secondary); }
+  .text-muted { color: var(--text-muted); }
+  .text-light { color: var(--text-light); }
+  
+  /* Border Colors - Match background colors */
+  .border-aqi-good { border-color: var(--aqi-good); }
+  .border-aqi-moderate { border-color: var(--aqi-moderate); }
+  .border-aqi-poor { border-color: var(--aqi-poor); }
+  .border-aqi-unhealthy { border-color: var(--aqi-unhealthy); }
+  .border-aqi-very-unhealthy { border-color: var(--aqi-very-unhealthy); }
+  .border-aqi-hazardous { border-color: var(--aqi-hazardous); }
+  
+  /* UI Background Colors */
+  .bg-white-alpha-65 { background-color: var(--white-alpha-65); }
+  .bg-white-alpha-20 { background-color: var(--white-alpha-20); }
+  
+  /* Typography - Figma font families */
+  .font-baloo { font-family: 'Baloo 2', sans-serif; }
+  .font-nunito { font-family: 'Nunito Sans', sans-serif; }
+  .font-inter { font-family: 'Inter', sans-serif; }
 }

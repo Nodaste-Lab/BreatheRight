@@ -172,6 +172,26 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="showcase"
+        options={{
+          title: 'Showcase',
+          tabBarIcon: ({ focused }) => (
+            <View style={{
+              backgroundColor: focused ? `${activeColor}` : 'transparent',
+              borderRadius: 16,
+              paddingTop: 2,
+              marginBottom: 12,
+            }}>
+              <Ionicons 
+                name="library-outline"
+                size={28}
+                color={focused ? burgundyColor : `${burgundyColor}`}
+              />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="location/[id]"
         options={{
           href: null, // Hide from tab bar
