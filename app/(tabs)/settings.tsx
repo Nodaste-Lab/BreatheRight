@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Switch, Alert, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Card } from '../../components/ui/Card';
@@ -10,8 +10,46 @@ import { GradientBackground } from '@/components/ui/GradientBackground';
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { user, profile, signOut } = useAuthStore();
+  const { user, profile, signOut, updateProfile } = useAuthStore();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
+  const [weatherSourceModalVisible, setWeatherSourceModalVisible] = React.useState(false);
+  
+  // Type for weather sources - matches the Profile interface
+  type WeatherSourceType = 'openweather' | 'microsoft' | 'google' | 'waqi' | 'purpleair' | 'airnow';
+  
+  const [selectedWeatherSource, setSelectedWeatherSource] = React.useState<WeatherSourceType>(
+    profile?.weather_source || 'microsoft'
+  );
+
+  // Update selected source when profile changes
+  React.useEffect(() => {
+    if (profile?.weather_source) {
+      setSelectedWeatherSource(profile.weather_source);
+    }
+  }, [profile?.weather_source]);
+
+  // Weather source configuration
+  // Order by most comprehensive to least comprehensive data coverage
+  const weatherSourceOptions = [
+    { value: 'microsoft', label: 'Microsoft Azure', icon: 'cloud-outline' },      // Most comprehensive
+    { value: 'google', label: 'Google', icon: 'logo-google' },                    // Good AQI + health
+    { value: 'waqi', label: 'World AQI', icon: 'globe-outline' },                 // Global AQI coverage
+    { value: 'purpleair', label: 'PurpleAir', icon: 'analytics-outline' },        // Hyperlocal sensors
+    { value: 'airnow', label: 'AirNow (EPA)', icon: 'flag-outline' },            // US EPA official
+    { value: 'openweather', label: 'OpenWeather', icon: 'partly-sunny-outline' }, // Weather-focused
+  ];
+
+  const handleWeatherSourceChange = async (source: WeatherSourceType) => {
+    try {
+      setSelectedWeatherSource(source);
+      await updateProfile({ weather_source: source });
+      setWeatherSourceModalVisible(false);
+      Alert.alert('Success', 'Weather source updated successfully');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update weather source');
+      console.error('Error updating weather source:', error);
+    }
+  };
 
   const handleSignOut = async () => {
     Alert.alert(
@@ -48,7 +86,7 @@ export default function SettingsScreen() {
                 <Ionicons name="person-circle-outline" size={48} color="#491124" />
               </View>
               <View style={styles.profileText}>
-                <Text style={styles.profileName}>{profile?.display_name || 'User'}</Text>
+                <Text style={styles.profileName}>{profile?.name || 'User'}</Text>
                 <Text style={styles.profileEmail}>{user?.email}</Text>
               </View>
             </View>
@@ -70,6 +108,22 @@ export default function SettingsScreen() {
                 thumbColor={notificationsEnabled ? '#491124' : '#f3f4f6'}
               />
             </View>
+
+            <TouchableOpacity 
+              style={styles.settingItem}
+              onPress={() => setWeatherSourceModalVisible(true)}
+            >
+              <View style={styles.settingLeft}>
+                <Ionicons name="cloud-outline" size={20} color="#491124" />
+                <Text style={styles.settingLabel}>Weather Source</Text>
+              </View>
+              <View style={styles.settingRight}>
+                <Text style={styles.settingValue}>
+                  {weatherSourceOptions.find(opt => opt.value === selectedWeatherSource)?.label || 'Microsoft Azure'}
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+              </View>
+            </TouchableOpacity>
 
             <View style={styles.settingItem}>
               <View style={styles.settingLeft}>
@@ -132,6 +186,64 @@ export default function SettingsScreen() {
           </View>
         </View>
         </ScrollView>
+
+        {/* Weather Source Selection Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={weatherSourceModalVisible}
+          onRequestClose={() => setWeatherSourceModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Weather Source</Text>
+                <TouchableOpacity
+                  onPress={() => setWeatherSourceModalVisible(false)}
+                  style={styles.modalCloseButton}
+                >
+                  <Ionicons name="close" size={24} color="#6b7280" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.modalBody}>
+                {weatherSourceOptions.map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.weatherOption,
+                      selectedWeatherSource === option.value && styles.weatherOptionSelected
+                    ]}
+                    onPress={() => handleWeatherSourceChange(option.value as WeatherSourceType)}
+                  >
+                    <View style={styles.weatherOptionLeft}>
+                      <Ionicons 
+                        name={option.icon as any} 
+                        size={24} 
+                        color={selectedWeatherSource === option.value ? '#491124' : '#6b7280'} 
+                      />
+                      <Text style={[
+                        styles.weatherOptionText,
+                        selectedWeatherSource === option.value && styles.weatherOptionTextSelected
+                      ]}>
+                        {option.label}
+                      </Text>
+                    </View>
+                    {selectedWeatherSource === option.value && (
+                      <Ionicons name="checkmark-circle" size={24} color="#491124" />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+              
+              <View style={styles.modalFooter}>
+                <Text style={styles.modalFooterText}>
+                  Choose your preferred weather data provider. This will affect all weather-related information in the app.
+                </Text>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </GradientBackground>
   );
@@ -202,6 +314,11 @@ const styles = StyleSheet.create({
     ...fonts.body.regular,
     color: '#6b7280',
   },
+  settingRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   linkItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -239,5 +356,69 @@ const styles = StyleSheet.create({
   versionSubtext: {
     ...fonts.body.tiny,
     color: '#d1d5db',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  modalTitle: {
+    ...fonts.headline.h4,
+    color: '#111827',
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  modalBody: {
+    padding: 20,
+  },
+  weatherOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    backgroundColor: '#f9fafb',
+  },
+  weatherOptionSelected: {
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#491124',
+  },
+  weatherOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  weatherOptionText: {
+    ...fonts.body.regular,
+    color: '#374151',
+  },
+  weatherOptionTextSelected: {
+    color: '#491124',
+    fontFamily: fonts.weight.semibold,
+  },
+  modalFooter: {
+    paddingHorizontal: 20,
+  },
+  modalFooterText: {
+    ...fonts.body.small,
+    color: '#6b7280',
+    textAlign: 'center',
   },
 });

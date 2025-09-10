@@ -6,6 +6,16 @@ export interface Profile {
   health_concerns: string[];
   notification_enabled: boolean;
   notification_time: string;
+  /**
+   * User's selected weather data source
+   * - microsoft: Microsoft Azure Maps (default) - Most comprehensive data
+   * - google: Google Maps API - Strong AQI with health recommendations
+   * - waqi: World Air Quality Index - Global coverage
+   * - purpleair: PurpleAir sensors - Hyperlocal community data
+   * - airnow: US EPA AirNow - Official government data
+   * - openweather: OpenWeatherMap - Weather-focused, limited AQI
+   */
+  weather_source?: 'openweather' | 'microsoft' | 'google' | 'waqi' | 'purpleair' | 'airnow';
   created_at: string;
   updated_at: string;
 }

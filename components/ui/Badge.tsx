@@ -42,20 +42,23 @@ export function Badge({
         return {
           paddingHorizontal: spacing.sm,
           paddingVertical: spacing.xs,
-          minHeight: 28,
+          minHeight: 32,
+          height: 32,
         };
       case 'lg':
         return {
           paddingHorizontal: spacing.base,
-          paddingVertical: spacing.md,
-          minHeight: 40,
+          paddingVertical: spacing.sm,
+          minHeight: 44,
+          height: 44,
         };
       case 'md':
       default:
         return {
           paddingHorizontal: spacing.badge.paddingHorizontal,
-          paddingVertical: spacing.badge.paddingVertical,
-          minHeight: 36,
+          paddingVertical: spacing.xs,
+          minHeight: 40,
+          height: 40,
         };
     }
   };
@@ -104,10 +107,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.badge,
     borderWidth: borders.badge,
-    gap: spacing.badge.gap,
+    gap: 0,
+    flexShrink: 0,
+    flexWrap: 'nowrap',
+    overflow: 'hidden',
   },
   text: {
     color: colors.contrastText.primary,
     textAlign: 'center',
+    lineHeight: undefined,
   },
 });

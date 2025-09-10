@@ -29,16 +29,18 @@ export default function TabLayout() {
         tabBarBackground: TabBarBackground,
         tabBarStyle: Platform.select({
           ios: {
-            // Use a transparent background on iOS to show the blur effect
+            // Force white background to override dark mode
             position: 'absolute',
-            height: 78, // Adjust height if needed
-            borderTopWidth: 0, // Remove top border
-            backgroundColor: '#F9FEFF',
+            height: 78,
+            borderTopWidth: 0,
+            backgroundColor: '#FFFFFF',
+            borderTopColor: 'transparent',
           },
           default: {
-            height: 70, // Adjust height if needed
-            borderTopWidth: 0, // Remove top border
-            backgroundColor: '#F9FEFF',
+            height: 70,
+            borderTopWidth: 0,
+            backgroundColor: '#FFFFFF',
+            borderTopColor: 'transparent',
             ...fonts.body.small,
           },
         }),
@@ -174,6 +176,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="showcase"
         options={{
+          href: null, // Hide from tab bar
+          headerShown: false,
           title: 'Showcase',
           tabBarIcon: ({ focused }) => (
             <View style={{

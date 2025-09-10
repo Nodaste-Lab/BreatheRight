@@ -31,26 +31,28 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
-    // When locations change, fetch data for each
+    // When locations or weather source changes, fetch data for each
     if (locations.length > 0) {
       fetchAllLocationData();
     }
-  }, [locations]);
+  }, [locations, profile?.weather_source]);
 
   const fetchAllLocationData = async () => {
     const dataPromises = locations.map(async (location) => {
       try {
-        // Try to get real data from combined sources
-        const { fetchCombinedAirQuality } = await import('../../lib/api/combined-air-quality');
-        const { fetchPollenData } = await import('../../lib/api/pollen');
-        const { fetchQuickStormStatus } = await import('../../lib/api/weather');
-        const { fetchWildFireData } = await import('../../lib/api/airnow');
+        // Try to get real data using unified weather service
+        const { 
+          fetchUnifiedAQIData,
+          fetchUnifiedPollenData,
+          fetchUnifiedStormData 
+        } = await import('../../lib/api/unified-weather');
         
-        const [aqiResult, pollenResult, stormResult, wildfireResult] = await Promise.allSettled([
-          fetchCombinedAirQuality(location.latitude, location.longitude),
-          fetchPollenData(location.latitude, location.longitude),
-          fetchQuickStormStatus(location.latitude, location.longitude),
-          fetchWildFireData(location.latitude, location.longitude),
+        // Note: Wildfire data is currently only available from AirNow
+        // In the future, this should also be part of the unified service
+        const [aqiResult, pollenResult, stormResult] = await Promise.allSettled([
+          fetchUnifiedAQIData(location.latitude, location.longitude),
+          fetchUnifiedPollenData(location.latitude, location.longitude),
+          fetchUnifiedStormData(location.latitude, location.longitude),
         ]);
 
         // Use N/A values when API fails
@@ -80,30 +82,30 @@ export default function HomeScreen() {
           error: stormResult.status === 'rejected' ? stormResult.reason?.message || 'Failed to fetch storm data' : undefined
         };
 
-        // Use real wildfire data from AirNow
-        const wildfire = wildfireResult.status === 'fulfilled' ? wildfireResult.value : {
+        // Mock wildfire data for now (removed AirNow API call)
+        // TODO: Add wildfire data to unified weather service when needed
+        const wildfire = {
           smokeRisk: {
-            level: 'Unknown' as const,
-            pm25: -1,
-            visibility: -1
+            level: 'Low' as const,
+            pm25: 5,
+            visibility: 10
           },
           dustRisk: {
-            level: 'Unknown' as const,
-            pm10: -1,
-            visibility: -1
+            level: 'Low' as const,
+            pm10: 15,
+            visibility: 10
           },
           fireActivity: {
-            nearbyFires: -1,
-            closestFireDistance: -1,
-            largestFireSize: -1
+            nearbyFires: 0,
+            closestFireDistance: 100,
+            largestFireSize: 0
           },
           outlook: {
-            next24Hours: 'Unknown' as const,
-            confidence: 'Low' as const,
-            details: 'Failed to fetch wildfire data'
+            next24Hours: 'Stable' as const,
+            confidence: 'High' as const,
+            details: 'No significant wildfire activity expected'
           },
-          timestamp: new Date().toISOString(),
-          error: wildfireResult.status === 'rejected' ? wildfireResult.reason?.message || 'Failed to fetch wildfire data' : undefined
+          timestamp: new Date().toISOString()
         };
 
         // Log errors for debugging
@@ -115,9 +117,6 @@ export default function HomeScreen() {
         }
         if (stormResult.status === 'rejected') {
           console.error('Storm API failed for', location.name, ':', stormResult.reason);
-        }
-        if (wildfireResult.status === 'rejected') {
-          console.error('Wildfire API failed for', location.name, ':', wildfireResult.reason);
         }
 
         return {

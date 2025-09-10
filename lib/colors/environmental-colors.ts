@@ -61,9 +61,19 @@ export const UNAVAILABLE_COLOR = '#9ca3af';
 export const UNAVAILABLE_TEXT_COLOR = '#6b7280';
 
 /**
- * Get pollen color based on pollen index value
+ * Get pollen color based on pollen index value or category string
  */
-export function getPollenColor(value: number | null | undefined): string {
+export function getPollenColor(value: number | string | null | undefined): string {
+  // Handle string categories
+  if (typeof value === 'string') {
+    const category = value.toLowerCase();
+    if (category === 'low') return POLLEN_COLORS.low;
+    if (category === 'medium' || category === 'moderate') return POLLEN_COLORS.moderate;
+    if (category === 'high') return POLLEN_COLORS.high;
+    return POLLEN_COLORS.unavailable;
+  }
+  
+  // Handle numeric values
   if (!value || value < 0) return POLLEN_COLORS.unavailable;
   if (value <= 3) return POLLEN_COLORS.low;
   if (value <= 6) return POLLEN_COLORS.moderate;

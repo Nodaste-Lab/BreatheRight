@@ -147,5 +147,9 @@ export interface MicrosoftWeatherData {
 export interface LocationData {
   location: Location;
   aqi: AQIData;
+  pollen?: PollenData;
+  lightning?: LightningData;
+  wildfire?: WildFireData;
+  weatherSource?: string;
   microsoft?: MicrosoftWeatherData;
 }

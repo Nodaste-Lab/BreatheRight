@@ -194,18 +194,20 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
 
       if (locationError) throw locationError;
 
-      // Import API functions
-      const { fetchGoogleAirQuality } = await import('../lib/api/google-air-quality');
-      const { fetchPollenData } = await import('../lib/api/pollen');
-      const { fetchWeatherData } = await import('../lib/api/weather');
-      const { fetchMicrosoftBreathingData } = await import('../lib/api/microsoft-weather');
+      // Import unified API functions
+      const { 
+        fetchUnifiedAQIData,
+        fetchUnifiedPollenData,
+        fetchUnifiedStormData,
+        fetchUnifiedBreathingData
+      } = await import('../lib/api/unified-weather');
 
-      // Fetch real AQI, pollen, lightning, and Microsoft breathing data
-      const [aqiData, pollenData, lightningData, microsoftData] = await Promise.allSettled([
-        fetchGoogleAirQuality(location.latitude, location.longitude),
-        fetchPollenData(location.latitude, location.longitude),
-        fetchWeatherData(location.latitude, location.longitude),
-        fetchMicrosoftBreathingData(location.latitude, location.longitude),
+      // Fetch real data using the user's selected weather source
+      const [aqiData, pollenData, lightningData, breathingData] = await Promise.allSettled([
+        fetchUnifiedAQIData(location.latitude, location.longitude),
+        fetchUnifiedPollenData(location.latitude, location.longitude),
+        fetchUnifiedStormData(location.latitude, location.longitude),
+        fetchUnifiedBreathingData(location.latitude, location.longitude),
       ]);
 
       // Handle AQI data (with fallback)
@@ -258,32 +260,35 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
         };
       }
 
-      // Handle Microsoft breathing data (with fallback)
+      // Handle breathing data (includes Microsoft data when that source is selected)
       let microsoft: MicrosoftWeatherData | undefined;
-      if (microsoftData.status === 'fulfilled') {
-        microsoft = {
-          currentAirQuality: microsoftData.value.currentAirQuality,
-          airQualityForecast: microsoftData.value.airQualityForecast,
-          severeAlerts: microsoftData.value.severeAlerts,
-          dailyIndices: microsoftData.value.dailyIndices,
-          // Extract pollen and UV data from daily forecast
-          pollenForecast: microsoftData.value.dailyForecast ? {
-            forecasts: microsoftData.value.dailyForecast.forecasts.map(forecast => ({
-              date: forecast.date,
-              pollen: {
-                grass: forecast.airAndPollen.find(item => item.name === 'Grass') || { value: 0, category: 'Low' },
-                tree: forecast.airAndPollen.find(item => item.name === 'Tree') || { value: 0, category: 'Low' },
-                weed: forecast.airAndPollen.find(item => item.name === 'Weed') || { value: 0, category: 'Low' },
-                mold: forecast.airAndPollen.find(item => item.name === 'Mold') || { value: 0, category: 'Low' },
-              },
-              uvIndex: forecast.airAndPollen.find(item => item.name === 'UVIndex') || { value: 0, category: 'Low' },
-            })),
-            timestamp: microsoftData.value.timestamp,
-          } : undefined,
-        };
-      } else {
-        console.warn('Failed to fetch Microsoft breathing data:', microsoftData.reason);
-        // Microsoft data is optional
+      if (breathingData.status === 'fulfilled' && breathingData.value.source === 'microsoft') {
+        const msData = breathingData.value;
+        if (msData.currentAirQuality || msData.airQualityForecast || msData.dailyForecast) {
+          microsoft = {
+            currentAirQuality: msData.currentAirQuality,
+            airQualityForecast: msData.airQualityForecast,
+            severeAlerts: msData.severeAlerts,
+            dailyIndices: msData.dailyIndices,
+            // Extract pollen and UV data from daily forecast
+            pollenForecast: msData.dailyForecast ? {
+              forecasts: msData.dailyForecast.forecasts.map(forecast => ({
+                date: forecast.date,
+                pollen: {
+                  grass: forecast.airAndPollen?.find(item => item.name === 'Grass') || { value: 0, category: 'Low' },
+                  tree: forecast.airAndPollen?.find(item => item.name === 'Tree') || { value: 0, category: 'Low' },
+                  weed: forecast.airAndPollen?.find(item => item.name === 'Weed') || { value: 0, category: 'Low' },
+                  mold: forecast.airAndPollen?.find(item => item.name === 'Mold') || { value: 0, category: 'Low' },
+                },
+                uvIndex: forecast.airAndPollen?.find(item => item.name === 'UVIndex') || { value: 0, category: 'Low' },
+              })),
+              timestamp: msData.timestamp,
+            } : undefined,
+          };
+        }
+      } else if (breathingData.status === 'rejected') {
+        console.warn('Failed to fetch breathing data:', breathingData.reason);
+        // Breathing data is optional
       }
 
       // Mock wildfire data for now

@@ -142,11 +142,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     gap: spacing.accordion.gap,
+    marginRight: spacing.sm,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    flexShrink: 0,
   },
   iconContainer: {
     width: 64,
@@ -160,6 +162,7 @@ const styles = StyleSheet.create({
     ...typography.h2,
     color: colors.text.primary,
     flex: 1,
+    flexShrink: 1,
   },
   content: {
     paddingHorizontal: spacing.accordion.paddingHorizontal,
