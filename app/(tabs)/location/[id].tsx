@@ -19,6 +19,7 @@ import {
   getLightningTextColor,
   UNAVAILABLE_COLOR 
 } from '../../../lib/colors/environmental-colors';
+import { generateLocationSummary } from '../../../lib/services/openai-summary';
 
 /**
  * Location Details Screen
@@ -44,6 +45,10 @@ export default function LocationDetailsScreen() {
   const [locationData, setLocationData] = useState<LocationData | null>(null);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [selectedLocationValue, setSelectedLocationValue] = useState<string>('');
+  
+  // AI-generated summary state
+  const [aiSummary, setAiSummary] = useState<{ headline: string; description: string } | null>(null);
+  const [isLoadingSummary, setIsLoadingSummary] = useState(false);
 
   const location = locations.find(loc => loc.id === id);
 
@@ -232,7 +237,7 @@ export default function LocationDetailsScreen() {
       // Check if user has AirNow selected
       const currentWeatherSource = getWeatherSource();
 
-      setLocationData({
+      const newLocationData = {
         location: loc,
         aqi,
         pollen,
@@ -240,7 +245,25 @@ export default function LocationDetailsScreen() {
         wildfire,
         weatherSource: currentWeatherSource,
         microsoft,
-      });
+      };
+      
+      setLocationData(newLocationData);
+      
+      // Generate AI summary for the location
+      setIsLoadingSummary(true);
+      try {
+        const summary = await generateLocationSummary(newLocationData);
+        setAiSummary(summary);
+      } catch (summaryError) {
+        console.error('Error generating AI summary:', summaryError);
+        // Fallback to static content
+        setAiSummary({
+          headline: "Air Quality Update",
+          description: "Check current conditions for your area."
+        });
+      } finally {
+        setIsLoadingSummary(false);
+      }
     } catch (error) {
       console.error('Error loading location data:', error);
     }
@@ -377,9 +400,11 @@ export default function LocationDetailsScreen() {
               style={styles.kawaiiImage} 
             />
             <View style={styles.summaryText}>
-              <Text style={styles.summaryTitle}>{getCharacterTitle()}</Text>
+              <Text style={styles.summaryTitle}>
+                {isLoadingSummary ? "Generating..." : (aiSummary?.headline || getCharacterTitle())}
+              </Text>
               <Text style={styles.summaryDescription}>
-                {getCharacterDescription()}
+                {isLoadingSummary ? "Creating personalized summary..." : (aiSummary?.description || getCharacterDescription())}
               </Text>
             </View>
           </View>

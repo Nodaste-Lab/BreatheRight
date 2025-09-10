@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fonts } from '../../lib/fonts';
@@ -16,6 +16,7 @@ import {
 import { Card } from '../ui/Card';
 import { colors } from '../../lib/colors/theme';
 import { SevereWeatherAlertCard } from '../alerts/SevereWeatherAlert';
+import { generateLocationSummary } from '../../lib/services/openai-summary';
 
 interface LocationFeedCardProps {
   data: LocationData;
@@ -25,6 +26,32 @@ interface LocationFeedCardProps {
 
 export function LocationFeedCard({ data, onPress, onRemove }: LocationFeedCardProps) {
   const { location, aqi, pollen, lightning, wildfire, weather, microsoft } = data;
+  
+  // AI-generated summary state
+  const [aiSummary, setAiSummary] = useState<{ headline: string; description: string } | null>(null);
+  const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+
+  // Generate AI summary on component mount or data change
+  useEffect(() => {
+    const generateSummary = async () => {
+      setIsLoadingSummary(true);
+      try {
+        const summary = await generateLocationSummary(data);
+        setAiSummary(summary);
+      } catch (error) {
+        console.error('Error generating summary:', error);
+        // Fallback to static content on error
+        setAiSummary({
+          headline: "Air Quality Update",
+          description: getDescription()
+        });
+      } finally {
+        setIsLoadingSummary(false);
+      }
+    };
+
+    generateSummary();
+  }, [data.location.id, data.aqi.aqi, data.pollen?.overall, data.lightning?.probability]); // Re-generate when key values change
   
   // Check if AQI has source information (from combined API)
   const aqiSources = (aqi as any)?.sources;
@@ -127,9 +154,11 @@ export function LocationFeedCard({ data, onPress, onRemove }: LocationFeedCardPr
           <Image source={require('../../assets/kawaii/lungs-good.png')} style={styles.LungImage} />
         </View>
         <View style={styles.locationDescriptionText}>
-          <Text style={styles.locationDescriptionHeadline}>Stormy Tingles</Text>
+          <Text style={styles.locationDescriptionHeadline}>
+            {isLoadingSummary ? "Generating..." : (aiSummary?.headline || "Stormy Tingles")}
+          </Text>
           <Text style={styles.locationDescriptionBody}>
-            {getDescription()}
+            {isLoadingSummary ? "Creating personalized summary..." : (aiSummary?.description || getDescription())}
           </Text>
         </View>
       </View>
