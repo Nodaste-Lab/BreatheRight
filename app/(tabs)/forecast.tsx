@@ -85,6 +85,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     ...fonts.body.regular,
+    fontWeight: "400", // Use a valid string literal for React Native
     color: '#6b7280',
     textAlign: 'center',
   },

@@ -11,6 +11,7 @@ import { GradientBackground } from '../../components/ui/GradientBackground';
 import type { LocationData } from '../../types/location';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
+import { Button } from '@/components/ui';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -82,31 +83,9 @@ export default function HomeScreen() {
           error: stormResult.status === 'rejected' ? stormResult.reason?.message || 'Failed to fetch storm data' : undefined
         };
 
-        // Mock wildfire data for now (removed AirNow API call)
-        // TODO: Add wildfire data to unified weather service when needed
-        const wildfire = {
-          smokeRisk: {
-            level: 'Low' as const,
-            pm25: 5,
-            visibility: 10
-          },
-          dustRisk: {
-            level: 'Low' as const,
-            pm10: 15,
-            visibility: 10
-          },
-          fireActivity: {
-            nearbyFires: 0,
-            closestFireDistance: 100,
-            largestFireSize: 0
-          },
-          outlook: {
-            next24Hours: 'Stable' as const,
-            confidence: 'High' as const,
-            details: 'No significant wildfire activity expected'
-          },
-          timestamp: new Date().toISOString()
-        };
+        // Generate realistic wildfire estimates using shared utility
+        const { generateWildfireEstimate } = await import('../../lib/utils/wildfire-estimation');
+        const wildfire = generateWildfireEstimate(aqi);
 
         // Log errors for debugging
         if (aqiResult.status === 'rejected') {
@@ -283,30 +262,6 @@ export default function HomeScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <View style={styles.headerLeft}>
-              <View>
-                <Text style={styles.greeting}>Welcome back</Text>
-                <Text style={styles.userName}>{profile?.name || 'User'}</Text>
-              </View>
-            </View>
-            <View style={styles.headerRight}>
-              <TouchableOpacity 
-                style={styles.signOutButton}
-                onPress={handleSignOut}
-              >
-                <Ionicons name="log-out-outline" size={28} color="#6b7280" />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.addButton}
-                onPress={() => setShowAddModal(true)}
-              >
-                <Ionicons name="add-circle" size={44} color="#3b82f6" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
 
         {locationDataList.length === 0 ? (
           <View style={styles.emptyContainer}>
@@ -315,23 +270,32 @@ export default function HomeScreen() {
             <Text style={styles.emptyText}>
               Add your first location to start tracking air quality
             </Text>
-            <TouchableOpacity 
-              style={styles.addFirstButton}
+            <Button
+              title="Add Location"
+              variant="secondary"
+              size='sm'
+              style={{ margin: 20 }}
               onPress={() => setShowAddModal(true)}
-            >
-              <Ionicons name="add-outline" size={20} color="white" />
-              <Text style={styles.addFirstButtonText}>Add Location</Text>
-            </TouchableOpacity>
+            />
           </View>
         ) : (
-          locationDataList.map((data) => (
-            <LocationFeedCard
-              key={data.location.id}
-              data={data}
-              onPress={() => handleLocationPress(data.location.id)}
-              onRemove={() => handleRemoveLocation(data.location.id)}
+          <>
+            {locationDataList.map((data) => (
+              <LocationFeedCard
+                key={data.location.id}
+                data={data}
+                onPress={() => handleLocationPress(data.location.id)}
+                onRemove={() => handleRemoveLocation(data.location.id)}
+              />
+            ))}
+            <Button
+              title="Add Location"
+              variant="secondary"
+              size='sm'
+              style={{ margin: 20 }}
+              onPress={() => setShowAddModal(true)}
             />
-          ))
+          </>
         )}
 
         <View style={styles.bottomPadding} />
@@ -342,6 +306,7 @@ export default function HomeScreen() {
         onClose={() => setShowAddModal(false)}
         onLocationAdded={handleLocationAdded}
       />
+      
     </SafeAreaView>
     </GradientBackground>
   );

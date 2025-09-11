@@ -195,8 +195,8 @@ Current conditions:
 ${conditions.join('\n')}
 
 Please provide:
-1. A catchy and fun headline (2-4 words, fun and weather-related like "Stormy Tingles" or "Fresh Breeze")
-2. A brief description (under 200 characters) that's encouraging, actionable, and fun.
+1. A silly and fun headline (2-4 words), that describes the current air quality or pollen levels or lightning risk or the overall conditions.
+2. A brief description (under 200 characters) that's encouraging, actionable, and fun but also informative for those with allergies or asthma.
 
 Focus on:
 - How safe it is to go outside
@@ -205,6 +205,7 @@ Focus on:
 - Keep it positive and helpful
 
 Tone:
+- Kawaii Voice: playful, youthful and sweet, designed to evoke feelings of innocence, charm, and adorableness (like emojis + character voice)
 - Silly
 - Fun
 - Friendly
@@ -213,7 +214,20 @@ Tone:
 
 Response format:
 Headline: [Your headline]
-Description: [Your description]`;
+Description: [Your description]
+
+Do not include any unnecessary quotes
+
+Examples:
+Headline: Allergy Alert 🌸
+Description: The air is clean, but pollen is tickling your lungs — you might feel itchy eyes or a sneezy chest
+
+Headline: Sneezy Skies
+Description: Breathing feels easy, but high allergens could make your lungs feel scratchy or tight.
+
+Headline: Stormy Tingles ⚡
+Description: A touch of storm activity mixed with pollen may leave your lungs feeling twitchy or wheezy.
+`;
 }
 
 /**

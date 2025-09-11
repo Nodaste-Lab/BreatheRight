@@ -58,7 +58,13 @@ export function AccordionItem({
       >
         <View style={styles.headerLeft}>
           {leftIcon && <View style={styles.iconContainer}>{leftIcon}</View>}
-          <Text style={styles.title}>{title}</Text>
+          <Text 
+            style={styles.title}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {title}
+          </Text>
         </View>
         <View style={styles.headerRight}>
           {rightContent}
@@ -163,6 +169,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     flex: 1,
     flexShrink: 1,
+    includeFontPadding: false,
   },
   content: {
     paddingHorizontal: spacing.accordion.paddingHorizontal,

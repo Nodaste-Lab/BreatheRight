@@ -47,11 +47,6 @@ export function Chart({ data, height = 100, showLabels = false, style }: ChartPr
                   },
                 ]}
               />
-              {point.isActive && index === 0 && (
-                <View style={styles.nowLabel}>
-                  <Text style={styles.nowText}>Now</Text>
-                </View>
-              )}
             </View>
             {showLabels && point.label && (
               <Text style={styles.label}>{point.label}</Text>
@@ -88,33 +83,75 @@ export function HourlyChart({ hourlyData, currentHour = 0, style }: HourlyChartP
 }
 
 function TimeMarkers({ hourlyData }: { hourlyData: Array<{ hour: number; aqi: number }> }) {
-  const markers = [
-    { hour: 6, label: '6 am' },
-    { hour: 12, label: 'Noon' },
-    { hour: 18, label: '6 pm' },
-    { hour: 0, label: 'Midnight' },
-  ];
+  const createMarkers = () => {
+    const allMarkers = [];
+    
+    // Calculate chart padding to align with bars
+    const chartPadding = 8; // Match spacing.chart.padding
+    const containerWidth = 100; // Percentage width
+    const effectiveWidth = containerWidth - (chartPadding * 2);
+    
+    // Always add "Now" for the first position, aligned with first bar
+    allMarkers.push({
+      position: chartPadding,
+      label: 'Now',
+      isNow: true
+    });
+    
+    // Find other key time markers in the data with minimum spacing
+    const keyTimes = [
+      { hour: 6, label: '6 am' },
+      { hour: 12, label: 'Noon' },
+      { hour: 18, label: '6 pm' },
+      { hour: 0, label: 'Midnight' },
+    ];
+    
+    keyTimes.forEach(keyTime => {
+      const index = hourlyData.findIndex(d => d.hour === keyTime.hour);
+      if (index > 3 && index < hourlyData.length) { // Ensure minimum distance of 3 hours from "Now"
+        const barPosition = chartPadding + ((index / (hourlyData.length - 1)) * effectiveWidth);
+        
+        // Check if this position has enough space from existing markers
+        const hasSpace = allMarkers.every(existing => 
+          Math.abs(existing.position - barPosition) > 15 // Minimum 15% spacing
+        );
+        
+        if (hasSpace) {
+          allMarkers.push({
+            position: barPosition,
+            label: keyTime.label,
+            isNow: false
+          });
+        }
+      }
+    });
+    
+    // Sort by position and limit to 4 markers total
+    return allMarkers
+      .sort((a, b) => a.position - b.position)
+      .slice(0, 4);
+  };
+
+  const markers = createMarkers();
 
   return (
     <View style={styles.markersContainer}>
-      {markers.map((marker) => {
-        const index = hourlyData.findIndex(d => d.hour === marker.hour);
-        if (index === -1) return null;
-        
-        const position = (index / (hourlyData.length - 1)) * 100;
-        
-        return (
-          <View
-            key={marker.hour}
-            style={[
-              styles.marker,
-              { left: `${position}%` },
-            ]}
-          >
-            <Text style={styles.markerText}>{marker.label}</Text>
-          </View>
-        );
-      })}
+      {markers.map((marker, index) => (
+        <View
+          key={index}
+          style={[
+            styles.marker,
+            { left: `${marker.position}%` },
+          ]}
+        >
+          <Text style={[
+            styles.markerText,
+            marker.isNow && styles.nowMarkerText
+          ]}>
+            {marker.label}
+          </Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -153,18 +190,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     marginHorizontal: 1,
   },
-  nowLabel: {
-    position: 'absolute',
-    top: -20,
-    backgroundColor: colors.neutral.white,
-    paddingHorizontal: spacing.xs,
-    borderRadius: radius.xs,
-  },
-  nowText: {
-    ...typography.label,
-    color: colors.text.primary,
-    fontWeight: 'bold',
-  },
   label: {
     ...typography.chartLabel,
     color: colors.text.primary,
@@ -184,11 +209,16 @@ const styles = StyleSheet.create({
   marker: {
     position: 'absolute',
     alignItems: 'center',
-    transform: [{ translateX: -23 }], // Center the marker
+    transform: [{ translateX: -25 }], // Center the marker with text width
+    minWidth: 50,
   },
   markerText: {
     ...typography.chartLabel,
     color: colors.text.primary,
     textAlign: 'center',
+  },
+  nowMarkerText: {
+    fontWeight: 'bold',
+    color: colors.primary,
   },
 });

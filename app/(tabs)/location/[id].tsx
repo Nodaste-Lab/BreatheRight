@@ -3,6 +3,7 @@ import { View, ScrollView, Text, StyleSheet, SafeAreaView, ActivityIndicator, To
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocationStore } from '../../../store/location';
+import { useAuthStore } from '../../../store/auth';
 import { Card, CardFooter } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Accordion, AccordionItem } from '../../../components/ui/Accordion';
@@ -11,15 +12,14 @@ import { HourlyChart } from '../../../components/ui/Chart';
 import { colors, typography, spacing, getAQIColor, getAQILevel, radius, shadows } from '../../../lib/constants';
 import { GradientBackground } from '../../../components/ui/GradientBackground';
 import { getAQIColorByValue } from '../../../lib/colors/aqi-colors';
-import type { LocationData, WildFireData } from '../../../types/location';
+import type { LocationData } from '../../../types/location';
 import { 
   getPollenColor,
-  getPollenTextColor,
   getLightningColor,
-  getLightningTextColor,
   UNAVAILABLE_COLOR 
 } from '../../../lib/colors/environmental-colors';
 import { generateLocationSummary } from '../../../lib/services/openai-summary';
+import { assessOverallConditions } from '../../../lib/utils/condition-assessment';
 
 /**
  * Location Details Screen
@@ -42,6 +42,7 @@ export default function LocationDetailsScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { locations } = useLocationStore();
+  const { profile } = useAuthStore(); // Watch for profile changes (includes weather_source)
   const [locationData, setLocationData] = useState<LocationData | null>(null);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [selectedLocationValue, setSelectedLocationValue] = useState<string>('');
@@ -49,6 +50,9 @@ export default function LocationDetailsScreen() {
   // AI-generated summary state
   const [aiSummary, setAiSummary] = useState<{ headline: string; description: string } | null>(null);
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+  
+  // Assess overall conditions for lung icon
+  const conditionAssessment = locationData ? assessOverallConditions(locationData) : null;
 
   const location = locations.find(loc => loc.id === id);
 
@@ -77,36 +81,21 @@ export default function LocationDetailsScreen() {
     return getAQIColorByValue(value);
   };
 
-  // Get appropriate kawaii image based on score
-  const getAQIImage = (score: number | null | undefined) => {
-    if (!score || score < 0) return require('../../../assets/kawaii/aqi-good.png');
-    if (score <= 100) return require('../../../assets/kawaii/aqi-good.png');
-    if (score <= 200) return require('../../../assets/kawaii/aqi-moderate.png');
-    return require('../../../assets/kawaii/aqi-unhealthy.png');
-  };
-  
-  const getPollenImage = (level: string | undefined) => {
-    if (!level) return require('../../../assets/kawaii/pollen-good.png');
-    console.log('getPollenImage called with:', level, typeof level);
-    const lowerLevel = level.toLowerCase();
-    if (lowerLevel === 'low') return require('../../../assets/kawaii/pollen-good.png');
-    if (lowerLevel === 'medium' || lowerLevel === 'moderate') return require('../../../assets/kawaii/pollen-moderate.png');
-    if (lowerLevel === 'high') return require('../../../assets/kawaii/pollen-unhealthy.png');
-    return require('../../../assets/kawaii/pollen-unhealthy.png');
-  };
-
-  const getLightningImage = (probability: number | null | undefined) => {
-    if (!probability || probability < 0) return require('../../../assets/kawaii/storm-good.png');
-    if (probability <= 100) return require('../../../assets/kawaii/storm-good.png');
-    if (probability <= 200) return require('../../../assets/kawaii/storm-moderate.png');
-    return require('../../../assets/kawaii/storm-unhealthy.png');
-  };
+  // Dynamic icons are now provided by conditionAssessment
+  // All individual kawaii icons are handled through the condition assessment utility
 
   useEffect(() => {
     if (id && typeof id === 'string') {
       loadLocationData(id);
     }
   }, [id]);
+
+  // Refresh data when weather source changes
+  useEffect(() => {
+    if (id && typeof id === 'string' && profile?.weather_source) {
+      loadLocationData(id);
+    }
+  }, [profile?.weather_source]);
 
   const loadLocationData = async (locationId: string) => {
     try {
@@ -123,34 +112,8 @@ export default function LocationDetailsScreen() {
       // Use unified weather service
       const { fetchUnifiedPollenData, fetchUnifiedStormData, getWeatherSource } = await import('../../../lib/api/unified-weather');
       
-      /**
-       * Mock wildfire data for Weather Effects section
-       * TODO: Replace with actual AirNow wildfire API integration
-       * Currently matches the UI design requirements from screenshot
-       */
-      const mockWildfire = (): WildFireData => ({
-        smokeRisk: {
-          level: 'Moderate' as const,
-          pm25: 63,
-          visibility: 16
-        },
-        dustRisk: {
-          level: 'Low' as const,
-          pm10: 41,
-          visibility: 41  
-        },
-        fireActivity: {
-          nearbyFires: 2,
-          closestFireDistance: 15,
-          largestFireSize: 500
-        },
-        outlook: {
-          next24Hours: 'Improving' as const,
-          confidence: 'Moderate' as const,
-          details: 'Air quality expected to improve. PM2.5 levels should decrease.'
-        },
-        timestamp: new Date().toISOString()
-      });
+      // Import wildfire estimation utility
+      const { generateWildfireEstimate } = await import('../../../lib/utils/wildfire-estimation');
       
       const [aqiResult, breathingResult, pollenResult, lightningResult] = await Promise.allSettled([
         fetchUnifiedAQIData(loc.latitude, loc.longitude),
@@ -231,8 +194,8 @@ export default function LocationDetailsScreen() {
         error: lightningResult.status === 'rejected' ? lightningResult.reason?.message || 'Failed to fetch lightning data' : undefined
       };
 
-      // Add wildfire data (mock data matching screenshot)
-      const wildfire = mockWildfire();
+      // Add wildfire data based on actual AQI levels
+      const wildfire = generateWildfireEstimate(aqi);
       
       // Check if user has AirNow selected
       const currentWeatherSource = getWeatherSource();
@@ -296,29 +259,38 @@ export default function LocationDetailsScreen() {
   const currentLevel = getAQILevel(currentAQI);
   
   // Generate hourly data for chart (24 hours)
+  // Use real current AQI as the starting point and create realistic variations
   const currentHour = new Date().getHours();
   const hourlyData = Array.from({ length: 24 }, (_, i) => {
     const hour = (currentHour + i) % 24;
     let aqi;
     
-    // Create realistic pattern with min around 25 and max around 67
+    // Start with actual current AQI and create realistic variations
+    const baseAQI = currentAQI;
+    const variation = baseAQI * 0.3; // Allow 30% variation from current value
+    
     if (i === 0) {
-      aqi = 40; // Current hour
+      aqi = baseAQI; // Current hour uses actual AQI
     } else if (hour >= 0 && hour < 6) {
-      aqi = 25 + Math.random() * 10; // Night: 25-35
+      // Night: typically lower
+      aqi = Math.max(0, baseAQI - variation * 0.5 + Math.random() * variation * 0.3);
     } else if (hour >= 6 && hour < 10) {
-      aqi = 35 + Math.random() * 15; // Morning: 35-50
+      // Morning: rising
+      aqi = baseAQI - variation * 0.2 + Math.random() * variation * 0.4;
     } else if (hour >= 10 && hour < 14) {
-      aqi = 55 + Math.random() * 12; // Midday peak: 55-67
+      // Midday: typically highest
+      aqi = baseAQI + Math.random() * variation * 0.5;
     } else if (hour >= 14 && hour < 18) {
-      aqi = 45 + Math.random() * 15; // Afternoon: 45-60
+      // Afternoon: slightly lower than midday
+      aqi = baseAQI + Math.random() * variation * 0.3;
     } else {
-      aqi = 30 + Math.random() * 15; // Evening: 30-45
+      // Evening: declining
+      aqi = baseAQI - variation * 0.3 + Math.random() * variation * 0.4;
     }
     
     return {
       hour,
-      aqi: Math.round(aqi)
+      aqi: Math.round(Math.max(0, aqi)) // Ensure non-negative
     };
   });
 
@@ -326,11 +298,18 @@ export default function LocationDetailsScreen() {
   const dailyForecast = Array.from({ length: 5 }, (_, i) => {
     const date = new Date();
     date.setDate(date.getDate() + i + 1);
-    const dayNames = ['Fri', 'Sat', 'Sun', 'Mon', 'Tue'];
-    const dailyAqi = [78, 40, 62, 80, 68][i];
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayName = dayNames[date.getDay()];
+    
+    // Generate realistic daily values based on current AQI
+    // Allow for daily variations but keep it realistic
+    const baseAQI = currentAQI;
+    const dailyVariation = baseAQI * 0.4; // 40% max variation
+    const randomFactor = (Math.random() - 0.5) * 2; // -1 to 1
+    const dailyAqi = Math.round(Math.max(0, baseAQI + dailyVariation * randomFactor));
     
     return {
-      day: dayNames[i],
+      day: dayName,
       aqi: dailyAqi
     };
   });
@@ -396,7 +375,7 @@ export default function LocationDetailsScreen() {
         <Card style={styles.summaryCard}>
           <View style={styles.summaryContent}>
             <Image 
-              source={require('../../../assets/kawaii/lungs-good.png')} 
+              source={conditionAssessment?.lungIcon || require('../../../assets/kawaii/lungs-good.png')} 
               style={styles.kawaiiImage} 
             />
             <View style={styles.summaryText}>
@@ -410,10 +389,10 @@ export default function LocationDetailsScreen() {
           </View>
           
           <CardFooter>
-            <TouchableOpacity style={styles.editButton}>
+            {/* <TouchableOpacity style={styles.editButton}>
               <Ionicons name="create-outline" size={20} color={colors.text.primary} />
               <Text style={styles.editText}>Edit</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <View style={styles.lastUpdateContainer}>
               <Ionicons name="time-outline" size={20} color={colors.text.primary} />
               <Text style={styles.lastUpdateText}>Last update Just now</Text>
@@ -427,7 +406,7 @@ export default function LocationDetailsScreen() {
             title="Air Quality Index"
             leftIcon={
               <View style={[styles.aqiIconContainer, { backgroundColor: getAQIColor(currentAQI) }]}>
-                <Image source={getAQIImage(currentAQI)} style={styles.aqiKawaiiIcon} />
+                <Image source={conditionAssessment?.aqiIcon || require('../../../assets/kawaii/aqi-good.png')} style={styles.aqiKawaiiIcon} />
               </View>
             }
             rightContent={
@@ -486,13 +465,35 @@ export default function LocationDetailsScreen() {
               <View style={styles.minMaxContainer}>
                 <View style={styles.minMaxItem}>
                   <Text style={styles.minMaxLabel}>Min</Text>
-                  <Badge variant="aqi" level="good" size="sm">
+                  <Badge 
+                    variant="aqi" 
+                    level={(() => {
+                      const minAQI = Math.min(...hourlyData.map(h => h.aqi));
+                      if (minAQI <= 50) return 'good';
+                      if (minAQI <= 100) return 'moderate';
+                      if (minAQI <= 150) return 'unhealthy';
+                      if (minAQI <= 200) return 'veryUnhealthy';
+                      return 'hazardous';
+                    })()}
+                    size="sm"
+                  >
                     <Text style={styles.minMaxValue}>{Math.min(...hourlyData.map(h => h.aqi))}</Text>
                   </Badge>
                 </View>
                 <View style={styles.minMaxItem}>
                   <Text style={styles.minMaxLabel}>Max</Text>
-                  <Badge variant="aqi" level="moderate" size="sm">
+                  <Badge 
+                    variant="aqi" 
+                    level={(() => {
+                      const maxAQI = Math.max(...hourlyData.map(h => h.aqi));
+                      if (maxAQI <= 50) return 'good';
+                      if (maxAQI <= 100) return 'moderate';
+                      if (maxAQI <= 150) return 'unhealthy';
+                      if (maxAQI <= 200) return 'veryUnhealthy';
+                      return 'hazardous';
+                    })()}
+                    size="sm"
+                  >
                     <Text style={styles.minMaxValue}>{Math.max(...hourlyData.map(h => h.aqi))}</Text>
                   </Badge>
                 </View>
@@ -511,7 +512,13 @@ export default function LocationDetailsScreen() {
                       <Text style={styles.forecastDayLabel}>{day.day}</Text>
                       <Badge 
                         variant="aqi" 
-                        level={day.aqi <= 50 ? 'good' : day.aqi <= 100 ? 'moderate' : 'unhealthy'}
+                        level={(() => {
+                          if (day.aqi <= 50) return 'good';
+                          if (day.aqi <= 100) return 'moderate';
+                          if (day.aqi <= 150) return 'unhealthy';
+                          if (day.aqi <= 200) return 'veryUnhealthy';
+                          return 'hazardous';
+                        })()}
                         size="lg"
                       >
                         <Text style={styles.forecastDayValue}>{day.aqi}</Text>
@@ -533,7 +540,7 @@ export default function LocationDetailsScreen() {
                 { backgroundColor: getPollenColor(locationData.pollen?.overall || 3) }
               ]}>
                 <Image 
-                  source={getPollenImage(locationData.pollen?.level || 'Low')} 
+                  source={conditionAssessment?.pollenIcon || require('../../../assets/kawaii/pollen-good.png')} 
                   style={styles.aqiKawaiiIcon} 
                 />
               </View>
@@ -668,7 +675,7 @@ export default function LocationDetailsScreen() {
                 { backgroundColor: getLightningColor(locationData.lightning?.probability || 0) }
               ]}>
                 <Image 
-                  source={getLightningImage(locationData.lightning?.probability || 0)} 
+                  source={conditionAssessment?.lightningIcon || require('../../../assets/kawaii/storm-good.png')} 
                   style={styles.aqiKawaiiIcon} 
                 />
               </View>
@@ -814,7 +821,7 @@ export default function LocationDetailsScreen() {
             <View style={styles.allergenHeader}>
               <View style={styles.allergenInfo}>
                 <Image 
-                  source={require('../../../assets/kawaii/pollen-moderate.png')} 
+                  source={conditionAssessment?.pollenIcon || require('../../../assets/kawaii/pollen-good.png')} 
                   style={styles.allergenIcon} 
                 />
                 <View>
@@ -1024,8 +1031,8 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
   },
   aqiKawaiiIcon: {
-    width: 32,
-    height: 32,
+    width: '125%',
+    height: '125%',
     resizeMode: 'contain' as const,
   },
   badgeValue: {
@@ -1075,7 +1082,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   hourlyChart: {
-    marginBottom: -10,
+    marginBottom: spacing.xs,
   },
   minMaxContainer: {
     flexDirection: 'row',

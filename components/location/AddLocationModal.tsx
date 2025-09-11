@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, Modal, Alert, ActivityIndicator, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Modal, Alert, ActivityIndicator, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useLocationStore } from '../../store/location';
@@ -109,14 +110,33 @@ export function AddLocationModal({ visible, onClose, onLocationAdded }: AddLocat
   return (
     <Modal
       visible={visible}
-      transparent
       animationType="slide"
+      presentationStyle="fullScreen"
       onRequestClose={handleClose}
     >
-      <View style={styles.overlay}>
-        <View style={styles.modal}>
-          <ScrollView showsVerticalScrollIndicator={false}>
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView 
+          style={styles.keyboardAvoidingView}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          {/* Header */}
+          <View style={styles.header}>
             <Text style={styles.title}>Add Location</Text>
+            <TouchableOpacity 
+              onPress={handleClose}
+              style={styles.closeButton}
+              disabled={isDisabled}
+            >
+              <Ionicons name="close" size={24} color="#6B7280" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView 
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
             
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Location Name (optional)</Text>
@@ -128,14 +148,14 @@ export function AddLocationModal({ visible, onClose, onLocationAdded }: AddLocat
               />
             </View>
 
-            <View style={styles.divider}>
+            {/* <View style={styles.divider}>
               <View style={styles.dividerLine} />
               <Text style={styles.dividerText}>Choose one option</Text>
               <View style={styles.dividerLine} />
-            </View>
+            </View> */}
 
             {/* Current Location Option */}
-            <View style={styles.optionSection}>
+            {/* <View style={styles.optionSection}>
               <Text style={styles.optionTitle}>Use Current Location</Text>
               <Text style={styles.optionDescription}>
                 We&apos;ll automatically detect your GPS location
@@ -152,7 +172,7 @@ export function AddLocationModal({ visible, onClose, onLocationAdded }: AddLocat
                   <Text style={styles.loadingText}>Getting your location...</Text>
                 </View>
               )}
-            </View>
+            </View> */}
 
             {/* Manual Address Option */}
             <View style={styles.optionSection}>
@@ -181,40 +201,47 @@ export function AddLocationModal({ visible, onClose, onLocationAdded }: AddLocat
               )}
             </View>
 
-            <View style={styles.cancelButtonContainer}>
-              <Button
-                title="Cancel"
-                onPress={handleClose}
-                variant="outline"
-                disabled={isDisabled}
-              />
-            </View>
           </ScrollView>
-        </View>
-      </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  container: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modal: {
     backgroundColor: 'white',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    maxHeight: '80%',
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    position: 'relative',
   },
   title: {
     fontSize: 20,
     fontWeight: '600',
-    marginBottom: 16,
     color: '#111827',
-    textAlign: 'center',
+  },
+  closeButton: {
+    position: 'absolute',
+    right: 20,
+    padding: 4,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 24,
+    paddingBottom: 40,
   },
   inputContainer: {
     marginBottom: 20,
@@ -265,9 +292,6 @@ const styles = StyleSheet.create({
   },
   optionButton: {
     width: '100%',
-  },
-  cancelButtonContainer: {
-    marginTop: 8,
   },
   loadingContainer: {
     flexDirection: 'row',

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Switch, Alert, Modal } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Switch, Alert, Modal, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Card } from '../../components/ui/Card';
@@ -7,12 +7,15 @@ import { fonts } from '../../lib/fonts';
 import { useAuthStore } from '../../store/auth';
 import { colors } from '@/lib/colors/theme';
 import { GradientBackground } from '@/components/ui/GradientBackground';
+import { useLocationStore } from '../../store/location';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { user, profile, signOut, updateProfile } = useAuthStore();
+  const { fetchUserLocations } = useLocationStore();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [weatherSourceModalVisible, setWeatherSourceModalVisible] = React.useState(false);
+  const [isUpdatingSource, setIsUpdatingSource] = React.useState(false);
   
   // Type for weather sources - matches the Profile interface
   type WeatherSourceType = 'openweather' | 'microsoft' | 'google' | 'waqi' | 'purpleair' | 'airnow';
@@ -41,13 +44,28 @@ export default function SettingsScreen() {
 
   const handleWeatherSourceChange = async (source: WeatherSourceType) => {
     try {
+      setIsUpdatingSource(true);
       setSelectedWeatherSource(source);
+      
+      // Update the profile with new weather source
       await updateProfile({ weather_source: source });
+      
+      // Close the modal immediately for better UX
       setWeatherSourceModalVisible(false);
-      Alert.alert('Success', 'Weather source updated successfully');
+      
+      // Trigger a refresh of all location data with new source
+      // This will cause the home screen to re-fetch data using the new source
+      await fetchUserLocations();
+      
+      // Navigate to home tab to show refreshed data
+      router.replace('/(tabs)/');
+      
+      Alert.alert('Success', 'Weather source updated and data refreshed');
     } catch (error) {
       Alert.alert('Error', 'Failed to update weather source');
       console.error('Error updating weather source:', error);
+    } finally {
+      setIsUpdatingSource(false);
     }
   };
 
@@ -125,21 +143,6 @@ export default function SettingsScreen() {
               </View>
             </TouchableOpacity>
 
-            <View style={styles.settingItem}>
-              <View style={styles.settingLeft}>
-                <Ionicons name="thermometer-outline" size={20} color="#491124" />
-                <Text style={styles.settingLabel}>Temperature Unit</Text>
-              </View>
-              <Text style={styles.settingValue}>°F</Text>
-            </View>
-
-            <View style={styles.settingItem}>
-              <View style={styles.settingLeft}>
-                <Ionicons name="speedometer-outline" size={20} color="#491124" />
-                <Text style={styles.settingLabel}>Distance Unit</Text>
-              </View>
-              <Text style={styles.settingValue}>Miles</Text>
-            </View>
           </Card>
 
           {/* About */}
@@ -207,33 +210,41 @@ export default function SettingsScreen() {
               </View>
               
               <View style={styles.modalBody}>
-                {weatherSourceOptions.map((option) => (
-                  <TouchableOpacity
-                    key={option.value}
-                    style={[
-                      styles.weatherOption,
-                      selectedWeatherSource === option.value && styles.weatherOptionSelected
-                    ]}
-                    onPress={() => handleWeatherSourceChange(option.value as WeatherSourceType)}
-                  >
-                    <View style={styles.weatherOptionLeft}>
-                      <Ionicons 
-                        name={option.icon as any} 
-                        size={24} 
-                        color={selectedWeatherSource === option.value ? '#491124' : '#6b7280'} 
-                      />
-                      <Text style={[
-                        styles.weatherOptionText,
-                        selectedWeatherSource === option.value && styles.weatherOptionTextSelected
-                      ]}>
-                        {option.label}
-                      </Text>
-                    </View>
-                    {selectedWeatherSource === option.value && (
-                      <Ionicons name="checkmark-circle" size={24} color="#491124" />
-                    )}
-                  </TouchableOpacity>
-                ))}
+                {isUpdatingSource ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#491124" />
+                    <Text style={styles.loadingText}>Updating weather source...</Text>
+                  </View>
+                ) : (
+                  weatherSourceOptions.map((option) => (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        styles.weatherOption,
+                        selectedWeatherSource === option.value && styles.weatherOptionSelected
+                      ]}
+                      onPress={() => handleWeatherSourceChange(option.value as WeatherSourceType)}
+                      disabled={isUpdatingSource}
+                    >
+                      <View style={styles.weatherOptionLeft}>
+                        <Ionicons 
+                          name={option.icon as any} 
+                          size={24} 
+                          color={selectedWeatherSource === option.value ? '#491124' : '#6b7280'} 
+                        />
+                        <Text style={[
+                          styles.weatherOptionText,
+                          selectedWeatherSource === option.value && styles.weatherOptionTextSelected
+                        ]}>
+                          {option.label}
+                        </Text>
+                      </View>
+                      {selectedWeatherSource === option.value && (
+                        <Ionicons name="checkmark-circle" size={24} color="#491124" />
+                      )}
+                    </TouchableOpacity>
+                  ))
+                )}
               </View>
               
               <View style={styles.modalFooter}>
@@ -420,5 +431,15 @@ const styles = StyleSheet.create({
     ...fonts.body.small,
     color: '#6b7280',
     textAlign: 'center',
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    ...fonts.body.regular,
+    color: '#6b7280',
+    marginTop: 12,
   },
 });

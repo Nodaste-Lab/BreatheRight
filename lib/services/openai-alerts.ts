@@ -190,6 +190,13 @@ ${alertType === 'morning' ?
   'Evening focus: Summarize the day, suggest tomorrow preparation'
 }
 
+Tone:
+- Silly
+- Fun
+- Friendly
+- Approachable
+- Encouraging
+
 Respond with just the alert message, no extra formatting.`;
 }
 

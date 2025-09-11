@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase/client';
 import * as ExpoLocation from 'expo-location';
-import type { Location, LocationData, AQIData, PollenData, LightningData, WildFireData, WeatherData, MicrosoftWeatherData } from '../types/location';
+import type { Location, LocationData, AQIData, PollenData, LightningData, MicrosoftWeatherData } from '../types/location';
 
 interface LocationState {
   locations: Location[];
@@ -291,30 +291,9 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
         // Breathing data is optional
       }
 
-      // Mock wildfire data for now
-      const wildfire: WildFireData = {
-        smokeRisk: {
-          level: 'Low',
-          pm25: 5,
-          visibility: 10,
-        },
-        dustRisk: {
-          level: 'Low',
-          pm10: 15,
-          visibility: 10,
-        },
-        fireActivity: {
-          nearbyFires: 0,
-          closestFireDistance: -1,
-          largestFireSize: -1,
-        },
-        outlook: {
-          next24Hours: 'Stable',
-          confidence: 'Moderate',
-          details: 'No significant fire activity expected.',
-        },
-        timestamp: new Date().toISOString(),
-      };
+      // Generate realistic wildfire estimates based on current air quality data
+      const { generateWildfireEstimate } = await import('../lib/utils/wildfire-estimation');
+      const wildfire = generateWildfireEstimate(aqi);
 
       set({ 
         currentLocation: {
