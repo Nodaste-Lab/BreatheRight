@@ -12,6 +12,17 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, radius, shadows } from '../../lib/constants';
 
+/**
+ * Dropdown Component
+ * 
+ * Features:
+ * - Text truncation: All labels and sublabels are automatically truncated to single lines
+ * - Modal presentation with overlay for better UX
+ * - Supports both label and sublabel (e.g., location name and address)
+ * - Left icon support for visual indicators
+ * - Active state styling for selected items
+ */
+
 interface DropdownItem {
   label: string;
   value: string | number;
@@ -56,11 +67,23 @@ export function Dropdown({
           {leftIcon && <View style={styles.iconContainer}>{leftIcon}</View>}
           <View style={styles.textContainer}>
             {label && <Text style={styles.label}>{label}</Text>}
-            <Text style={[styles.value, !selectedItem && styles.placeholder]}>
+            {/* Main label with single-line truncation */}
+            <Text 
+              style={[styles.value, !selectedItem && styles.placeholder]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
               {selectedItem?.label || placeholder}
             </Text>
+            {/* Sublabel (e.g., address) with single-line truncation */}
             {selectedItem?.sublabel && (
-              <Text style={styles.sublabel}>{selectedItem.sublabel}</Text>
+              <Text 
+                style={styles.sublabel}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {selectedItem.sublabel}
+              </Text>
             )}
           </View>
         </View>
@@ -101,11 +124,21 @@ export function Dropdown({
                     activeOpacity={0.7}
                   >
                     <View style={styles.itemContent}>
-                      <Text style={[styles.itemLabel, isSelected && styles.selectedItemText]}>
+                      {/* Dropdown item label with truncation */}
+                      <Text 
+                        style={[styles.itemLabel, isSelected && styles.selectedItemText]}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
                         {item.label}
                       </Text>
+                      {/* Dropdown item sublabel with truncation */}
                       {item.sublabel && (
-                        <Text style={[styles.itemSublabel, isSelected && styles.selectedItemText]}>
+                        <Text 
+                          style={[styles.itemSublabel, isSelected && styles.selectedItemText]}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
                           {item.sublabel}
                         </Text>
                       )}

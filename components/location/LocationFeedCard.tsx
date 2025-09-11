@@ -17,6 +17,7 @@ import { Card } from '../ui/Card';
 import { colors } from '../../lib/colors/theme';
 import { SevereWeatherAlertCard } from '../alerts/SevereWeatherAlert';
 import { generateLocationSummary } from '../../lib/services/openai-summary';
+import { assessOverallConditions } from '../../lib/utils/condition-assessment';
 
 interface LocationFeedCardProps {
   data: LocationData;
@@ -30,6 +31,10 @@ export function LocationFeedCard({ data, onPress, onRemove }: LocationFeedCardPr
   // AI-generated summary state
   const [aiSummary, setAiSummary] = useState<{ headline: string; description: string } | null>(null);
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+  
+  // Dynamic icon system: Uses condition assessment utility to provide consistent icons
+  // across home view and location detail view based on actual environmental data
+  const conditionAssessment = assessOverallConditions(data);
 
   // Generate AI summary on component mount or data change
   useEffect(() => {
@@ -55,8 +60,6 @@ export function LocationFeedCard({ data, onPress, onRemove }: LocationFeedCardPr
   
   // Check if AQI has source information (from combined API)
   const aqiSources = (aqi as any)?.sources;
-  const aqiConfidence = (aqi as any)?.confidence;
-  const aqiDiscrepancy = (aqi as any)?.discrepancy;
 
   // Display full address but truncate at 20 characters
   const getDisplayAddress = (address: string) => {
@@ -69,30 +72,6 @@ export function LocationFeedCard({ data, onPress, onRemove }: LocationFeedCardPr
     if (!value || value < 0) return UNAVAILABLE_COLOR;
     return getAQIColorByValue(value);
   };
-
-  // Get appropriate kawaii image based on score
-  const getAQIImage = (score: number | null | undefined) => {
-    if (!score || score < 0) return require('../../assets/kawaii/aqi-good.png');
-    if (score <= 100) return require('../../assets/kawaii/aqi-good.png');
-    if (score <= 200) return require('../../assets/kawaii/aqi-moderate.png');
-    return require('../../assets/kawaii/aqi-unhealthy.png');
-  };
-
-  const getPollenImage = (score: number | null | undefined) => {
-    if (!score || score < 0) return require('../../assets/kawaii/pollen-good.png');
-    const scaledScore = score * 10; // Convert to 0-100 scale
-    if (scaledScore <= 100) return require('../../assets/kawaii/pollen-good.png');
-    if (scaledScore <= 200) return require('../../assets/kawaii/pollen-moderate.png');
-    return require('../../assets/kawaii/pollen-unhealthy.png');
-  };
-
-  const getLightningImage = (probability: number | null | undefined) => {
-    if (!probability || probability < 0) return require('../../assets/kawaii/storm-good.png');
-    if (probability <= 100) return require('../../assets/kawaii/storm-good.png');
-    if (probability <= 200) return require('../../assets/kawaii/storm-moderate.png');
-    return require('../../assets/kawaii/storm-unhealthy.png');
-  };
-
 
   // Get description text
   const getDescription = () => {
@@ -151,7 +130,7 @@ export function LocationFeedCard({ data, onPress, onRemove }: LocationFeedCardPr
 
       <View style={styles.locationDescription}>
         <View style={styles.locationDescriptionIcon}>
-          <Image source={require('../../assets/kawaii/lungs-good.png')} style={styles.LungImage} />
+          <Image source={conditionAssessment.lungIcon} style={styles.LungImage} />
         </View>
         <View style={styles.locationDescriptionText}>
           <Text style={styles.locationDescriptionHeadline}>
@@ -229,7 +208,7 @@ export function LocationFeedCard({ data, onPress, onRemove }: LocationFeedCardPr
         {/* AQI Score */}
         <View style={styles.scoreCard}>
           <View style={[styles.scoreIcon, { backgroundColor: getAQIColorSafe(aqi?.aqi) }]}>
-            <Image source={getAQIImage(aqi?.aqi)} style={styles.scoreKawaiiImage} />
+            <Image source={conditionAssessment.aqiIcon} style={styles.scoreKawaiiImage} />
           </View>
           <View style={[styles.scoreValueContainer, { backgroundColor: getAQIColorSafe(aqi?.aqi) }]}>
             <Text style={[styles.scoreValue, { color: colors.burgundy }]}>
@@ -250,7 +229,7 @@ export function LocationFeedCard({ data, onPress, onRemove }: LocationFeedCardPr
         {/* Pollen Score */}
         <View style={styles.scoreCard}>
           <View style={[styles.scoreIcon, { backgroundColor: getPollenColor(pollen?.overall)}]}>
-            <Image source={getPollenImage(pollen?.overall)} style={styles.scoreKawaiiImage} />
+            <Image source={conditionAssessment.pollenIcon} style={styles.scoreKawaiiImage} />
           </View>
           <View style={[styles.scoreValueContainer, { backgroundColor: getPollenColor(pollen?.overall) }]}>
             <Text style={[styles.scoreValue, { color: colors.burgundy }]}>
@@ -263,7 +242,7 @@ export function LocationFeedCard({ data, onPress, onRemove }: LocationFeedCardPr
         {/* Lightning Score */}
         <View style={styles.scoreCard}>
           <View style={[styles.scoreIcon, { backgroundColor: getLightningColor(lightning?.probability) }]}>
-            <Image source={getLightningImage(lightning?.probability)} style={styles.scoreKawaiiImage} />
+            <Image source={conditionAssessment.lightningIcon} style={styles.scoreKawaiiImage} />
           </View>
           <View style={[styles.scoreValueContainer, { backgroundColor: getLightningColor(lightning?.probability) }]}>
             <Text style={[styles.scoreValue, { color: colors.burgundy }]}>
