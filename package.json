@@ -76,5 +76,22 @@
     "tailwindcss": "^3.4.17",
     "typescript": "~5.9.2"
   },
-  "private": true
+  "private": true,
+  "description": "React Native implementation of the BreathRight air quality monitoring application.",
+  "directories": {
+    "doc": "docs",
+    "lib": "lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benogren/BreatheRight.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/benogren/BreatheRight/issues"
+  },
+  "homepage": "https://github.com/benogren/BreatheRight#readme"
 }
