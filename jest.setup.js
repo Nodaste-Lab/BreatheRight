@@ -25,66 +25,68 @@ jest.mock('expo-router', () => ({
 }));
 
 // Mock Supabase
-jest.mock('./lib/supabase/client', () => ({
-  supabase: {
-    auth: {
-      getUser: jest.fn(),
-      signUp: jest.fn(),
-      signInWithPassword: jest.fn(),
-      signOut: jest.fn(),
-      resetPasswordForEmail: jest.fn(),
-      updateUser: jest.fn(),
-      onAuthStateChange: jest.fn(),
-      getSession: jest.fn(),
-    },
-    from: jest.fn(() => ({
-      select: jest.fn().mockReturnThis(),
-      insert: jest.fn().mockReturnThis(),
-      update: jest.fn().mockReturnThis(),
-      delete: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      order: jest.fn().mockReturnThis(),
-      single: jest.fn(),
-    })),
-  },
-}));
+jest.mock('./lib/supabase/client', () => {
+  const mockChain = {
+    select: jest.fn().mockReturnThis(),
+    insert: jest.fn().mockReturnThis(),
+    update: jest.fn().mockReturnThis(),
+    delete: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    order: jest.fn().mockReturnThis(),
+    single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    upsert: jest.fn().mockReturnThis(),
+    in: jest.fn().mockReturnThis(),
+    gt: jest.fn().mockReturnThis(),
+    gte: jest.fn().mockReturnThis(),
+    lt: jest.fn().mockReturnThis(),
+    lte: jest.fn().mockReturnThis(),
+    neq: jest.fn().mockReturnThis(),
+    or: jest.fn().mockReturnThis(),
+    filter: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockReturnThis(),
+    range: jest.fn().mockReturnThis(),
+  };
 
-// Mock React Native Alert specifically
+  return {
+    supabase: {
+      auth: {
+        getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+        signUp: jest.fn().mockResolvedValue({ data: null, error: null }),
+        signInWithPassword: jest.fn().mockResolvedValue({ data: null, error: null }),
+        signOut: jest.fn().mockResolvedValue({ error: null }),
+        resetPasswordForEmail: jest.fn().mockResolvedValue({ data: null, error: null }),
+        updateUser: jest.fn().mockResolvedValue({ data: null, error: null }),
+        onAuthStateChange: jest.fn(() => ({
+          data: { subscription: { unsubscribe: jest.fn() } },
+        })),
+        getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      },
+      from: jest.fn(() => mockChain),
+    },
+  };
+});
+
+// Mock React Native Alert
 jest.mock('react-native/Libraries/Alert/Alert', () => ({
   alert: jest.fn(),
 }));
 
-// Mock Platform
-jest.mock('react-native/Libraries/Utilities/Platform', () => ({
-  OS: 'ios',
-  select: jest.fn((obj) => obj.ios),
-  isPad: false,
-  isTesting: true,
-  Version: 14,
+// Mock Expo modules that might be missing
+jest.mock('expo-blur', () => ({
+  BlurView: 'BlurView',
 }));
 
-// Ensure Platform is available globally for React Native Testing Library
-const PlatformMock = {
-  OS: 'ios',
-  select: jest.fn((obj) => obj.ios),
-  isPad: false,
-  isTesting: true,
-  Version: 14,
-};
+jest.mock('expo-linear-gradient', () => ({
+  LinearGradient: 'LinearGradient',
+}));
 
-global.Platform = PlatformMock;
-
-// Make sure require('react-native').Platform returns the same mock
-jest.doMock('react-native', () => ({
-  Platform: PlatformMock,
-  StyleSheet: {
-    create: jest.fn((styles) => styles),
+jest.mock('expo-haptics', () => ({
+  impactAsync: jest.fn(),
+  ImpactFeedbackStyle: {
+    Light: 'Light',
+    Medium: 'Medium',
+    Heavy: 'Heavy',
   },
-  Alert: { alert: jest.fn() },
-  View: 'View',
-  Text: 'Text',
-  ScrollView: 'ScrollView',
-  TouchableOpacity: 'TouchableOpacity',
 }));
 
 // Mock Expo Vector Icons
@@ -118,29 +120,27 @@ global.fetch = jest.fn();
 // Set environment variables for tests
 process.env.EXPO_PUBLIC_AIRNOW_API_KEY = 'test-api-key';
 
-// Mock Zustand
-jest.mock('zustand', () => ({
-  create: jest.fn((fn) => {
-    const mockState = {};
-    return jest.fn(() => {
-      if (typeof fn === 'function') {
-        const stateAndActions = fn(
-          (updater) => {
-            if (typeof updater === 'function') {
-              Object.assign(mockState, updater(mockState));
-            } else {
-              Object.assign(mockState, updater);
-            }
-          },
-          () => mockState
-        );
-        Object.assign(mockState, stateAndActions);
-        return mockState;
-      }
-      return mockState;
-    });
-  }),
+// Mock NativeWind
+jest.mock('nativewind', () => ({
+  styled: (component) => component,
 }));
+
+// Mock Zustand
+jest.mock('zustand', () => {
+  const actualZustand = jest.requireActual('zustand');
+  return {
+    ...actualZustand,
+    create: (createStore) => {
+      const store = actualZustand.create(createStore);
+      return Object.assign(store, {
+        setState: store.setState,
+        getState: store.getState,
+        subscribe: store.subscribe,
+        destroy: store.destroy,
+      });
+    },
+  };
+});
 
 // Mock console methods for cleaner test output
 const originalWarn = console.warn;

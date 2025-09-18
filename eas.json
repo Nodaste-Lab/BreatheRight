@@ -22,10 +22,15 @@
     },
     "production": {
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "credentialsSource": "remote"
       },
       "ios": {
-        "buildConfiguration": "Release"
+        "buildConfiguration": "Release",
+        "credentialsSource": "remote"
+      },
+      "env": {
+        "EXPO_PUBLIC_AIRNOW_API_KEY": "placeholder"
       }
     }
   },

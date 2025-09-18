@@ -1,12 +1,16 @@
-import { useLocationStore } from '../location';
+import { act } from '@testing-library/react-native';
 import { supabase } from '../../lib/supabase/client';
 import * as ExpoLocation from 'expo-location';
 
-// Mock the entire store
-jest.mock('zustand');
+// Mock dependencies before importing the store
+jest.mock('../../lib/supabase/client');
+jest.mock('expo-location');
 
 const mockSupabase = supabase as jest.Mocked<typeof supabase>;
 const mockExpoLocation = ExpoLocation as jest.Mocked<typeof ExpoLocation>;
+
+// Import the store after mocking dependencies
+const { useLocationStore } = require('../location');
 
 describe('LocationStore', () => {
   let store: any;
@@ -14,9 +18,11 @@ describe('LocationStore', () => {
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
-    
+
     // Create a fresh store instance for each test
-    store = useLocationStore.getState();
+    act(() => {
+      store = useLocationStore.getState();
+    });
     
     // Mock successful auth responses
     mockSupabase.auth.getUser.mockResolvedValue({

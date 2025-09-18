@@ -1,4 +1,4 @@
-import { useAuthStore } from '../auth';
+import { act } from '@testing-library/react-native';
 import { supabase } from '../../lib/supabase/client';
 
 // Mock Supabase client
@@ -19,15 +19,20 @@ jest.mock('../../lib/supabase/client', () => ({
 
 const mockSupabase = supabase as jest.Mocked<typeof supabase>;
 
+// Import the store after mocking dependencies
+const { useAuthStore } = require('../auth');
+
 describe('AuthStore', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Reset the store state before each test
-    useAuthStore.setState({
-      user: null,
-      profile: null,
-      initialized: false,
-      loading: false,
+    act(() => {
+      useAuthStore.setState({
+        user: null,
+        profile: null,
+        initialized: false,
+        loading: false,
+      });
     });
   });
 
