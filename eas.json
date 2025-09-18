@@ -30,7 +30,7 @@
         "credentialsSource": "remote"
       },
       "env": {
-        "EXPO_PUBLIC_AIRNOW_API_KEY": "779A7194-C26A-421E-858C-FE29C7342954"
+        "EXPO_PUBLIC_AIRNOW_API_KEY": " "
       }
     }
   },
