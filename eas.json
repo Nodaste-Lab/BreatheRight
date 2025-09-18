@@ -22,15 +22,13 @@
     },
     "production": {
       "android": {
-        "buildType": "app-bundle",
-        "credentialsSource": "remote"
+        "buildType": "app-bundle"
       },
       "ios": {
-        "buildConfiguration": "Release",
-        "credentialsSource": "remote"
+        "buildConfiguration": "Release"
       },
       "env": {
-        "EXPO_PUBLIC_AIRNOW_API_KEY": " "
+        "EXPO_PUBLIC_AIRNOW_API_KEY": "779A7194-C26A-421E-858C-FE29C7342954"
       }
     }
   },
