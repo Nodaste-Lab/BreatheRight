@@ -5,14 +5,14 @@ PODS:
     - ExpoModulesCore
   - EXApplication (7.0.7):
     - ExpoModulesCore
-  - EXConstants (18.0.8):
+  - EXConstants (18.0.9):
     - ExpoModulesCore
   - EXJSONUtils (0.15.0)
   - EXManifests (1.0.8):
     - ExpoModulesCore
   - EXNotifications (0.32.11):
     - ExpoModulesCore
-  - Expo (54.0.7):
+  - Expo (54.0.8):
     - boost
     - DoubleConversion
     - ExpoModulesCore
@@ -262,7 +262,7 @@ PODS:
     - ExpoModulesCore
   - ExpoHaptics (15.0.7):
     - ExpoModulesCore
-  - ExpoHead (6.0.5):
+  - ExpoHead (6.0.6):
     - ExpoModulesCore
     - RNScreens
   - ExpoImage (3.0.8):
@@ -280,7 +280,7 @@ PODS:
     - ExpoModulesCore
   - ExpoLocation (19.0.7):
     - ExpoModulesCore
-  - ExpoModulesCore (3.0.15):
+  - ExpoModulesCore (3.0.16):
     - boost
     - DoubleConversion
     - fast_float
@@ -3405,11 +3405,11 @@ SPEC CHECKSUMS:
   DoubleConversion: cb417026b2400c8f53ae97020b2be961b59470cb
   EASClient: de38c20c1dd9af7ff435afdc8b2c9b7c20d46767
   EXApplication: a9d1c46d473d36f61302a9a81db2379441f3f094
-  EXConstants: 0246c66e19d755cd9c88504d5c69896bba41d8a6
+  EXConstants: 59d46d25b89f88cc38291a56dbce4d550758f72d
   EXJSONUtils: 1d3e4590438c3ee593684186007028a14b3686cd
   EXManifests: 7469efed75d694ce3c43a6da9c6f3886f66d3c26
   EXNotifications: a9eb811deeb51fb8e50ef45569be6ffab3994648
-  Expo: 394446b28e729dfcb9819785de26a48d85d4591a
+  Expo: 76227c1085c9eb5fd79d2e55508fea627f272490
   expo-dev-client: b0363ce1f16a248d7c9b67ceaee2dbee058c1e05
   expo-dev-launcher: ab9eb83b69c2f9fdd3f2f67d3da5bee02cfa7406
   expo-dev-menu: 7bba844fbaa2d50ad2be63a8ffbdc6d207017062
@@ -3420,13 +3420,13 @@ SPEC CHECKSUMS:
   ExpoFileSystem: adffad7d1f57f768ca7a5e3bf450312fb9ebd27a
   ExpoFont: d3e56c7cc03d9fd113b90a5513ad32b4bf46b0ff
   ExpoHaptics: b48d913e7e5f23816c6f130e525c9a6501b160b5
-  ExpoHead: 050ee8a854f672522b19ba477e8d09719b7ff374
+  ExpoHead: bd3ceefbd93f64ff8298e07711bb67605ffb646c
   ExpoImage: 306dd755c842dba9f3ee654c51834a9cc657e6ca
   ExpoKeepAwake: 3f5e3ac53627849174f3603271df8e08f174ed4a
   ExpoLinearGradient: f9e7182e5253d53b2de4134b69d70bbfc2d50588
   ExpoLinking: f5c171877e118e792cb9a77e5ade0b080d899b14
   ExpoLocation: 1dc9e4c06ef66ed081348a11eb637d1dfecc7d61
-  ExpoModulesCore: 1efdaa8323e35fcba5c70cbd3ac1a5fbe4da2eab
+  ExpoModulesCore: 8607b59ac8c06369925cb412c44635f7892956bd
   ExpoSecureStore: f44dee1354536bdb3d7fab8cc451ee737c41beca
   ExpoSplashScreen: 9d2ff8fa08f2c00336a83f93bebffed3a8312519
   ExpoSymbols: ef7b8ac77ac2d496b1bc3f0f7daf5e19c3a9933a
