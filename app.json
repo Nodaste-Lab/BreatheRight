@@ -2,7 +2,7 @@
   "expo": {
     "name": "AQBuddy",
     "slug": "breatheright",
-    "version": "1.0.1",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "aqbuddy",
@@ -62,7 +62,7 @@
       }
     },
     "owner": "benogren",
-    "runtimeVersion": "1.0.1",
+    "runtimeVersion": "1.0.0",
     "updates": {
       "url": "https://u.expo.dev/44b52b9e-4c00-4da6-be27-53ac3f6f2186"
     }
