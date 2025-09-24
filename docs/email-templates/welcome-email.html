@@ -1,0 +1,83 @@
+<h2>Welcome to AQBuddy!</h2>
+
+<table style="width: 100%; max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+    <tr>
+        <td style="text-align: center; padding: 40px 20px;">
+            <!-- Logo -->
+            <div style="margin-bottom: 20px;">
+                <img src="https://npdahqfgbbuoioadpilv.supabase.co/storage/v1/object/public/marketing/icon.png"
+                     alt="AQBuddy Logo"
+                     style="width: 64px; height: 64px; border-radius: 12px;" />
+            </div>
+
+            <!-- App Name -->
+            <h1 style="margin: 0 0 10px 0; color: #491124; font-size: 32px; font-weight: 700;">
+                Welcome to AQBuddy!
+            </h1>
+
+            <p style="margin: 0 0 30px 0; color: #6B7280; font-size: 18px;">
+                Your journey to better air quality starts here
+            </p>
+
+            <!-- Welcome Message -->
+            <div style="text-align: left; margin: 30px 0;">
+                <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                    Hi {{ .UserMetadata.name }},
+                </p>
+
+                <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                    Thank you for joining AQBuddy! We're excited to help you monitor and improve the air quality around you.
+                </p>
+
+                <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
+                    Here's what you can do with AQBuddy:
+                </p>
+
+                <!-- Features -->
+                <div style="background: #F9FAFB; border-radius: 12px; padding: 25px; margin: 0 0 30px 0;">
+                    <div style="margin: 0 0 15px 0;">
+                        <span style="font-size: 20px; margin-right: 10px;">📍</span>
+                        <span style="color: #374151; font-size: 16px; font-weight: 600;">Real-time AQI monitoring</span>
+                        <p style="margin: 5px 0 0 35px; color: #6B7280; font-size: 14px;">
+                            Get instant air quality updates for your location
+                        </p>
+                    </div>
+
+                    <div style="margin: 0 0 15px 0;">
+                        <span style="font-size: 20px; margin-right: 10px;">🔔</span>
+                        <span style="color: #374151; font-size: 16px; font-weight: 600;">Smart alerts</span>
+                        <p style="margin: 5px 0 0 35px; color: #6B7280; font-size: 14px;">
+                            Receive notifications when air quality changes
+                        </p>
+                    </div>
+
+                    <div style="margin: 0;">
+                        <span style="font-size: 20px; margin-right: 10px;">💡</span>
+                        <span style="color: #374151; font-size: 16px; font-weight: 600;">Health recommendations</span>
+                        <p style="margin: 5px 0 0 35px; color: #6B7280; font-size: 14px;">
+                            Get personalized tips based on your health concerns
+                        </p>
+                    </div>
+                </div>
+
+                <!-- CTA Button -->
+                <div style="text-align: center; margin: 40px 0;">
+                    <a href="{{ .SiteURL }}" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                        Open AQBuddy
+                    </a>
+                </div>
+
+                <p style="color: #6B7280; font-size: 14px; line-height: 1.6; margin: 0;">
+                    If you have any questions, feel free to reach out to us at support@aqbuddy.app
+                </p>
+            </div>
+
+            <!-- Footer -->
+            <hr style="margin: 40px 0 20px 0; border: none; border-top: 1px solid #E5E7EB;">
+
+            <p style="margin: 0; color: #9CA3AF; font-size: 12px;">
+                © 2024 AQBuddy • Breathe easy with real-time air quality monitoring
+            </p>
+        </td>
+    </tr>
+</table>

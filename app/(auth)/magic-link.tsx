@@ -70,21 +70,33 @@ export default function MagicLinkScreen() {
           <View style={styles.header}>
             <Text style={styles.title}>Check Your Email</Text>
             <Text style={styles.subtitle}>
-              We've sent a magic link to:
+              We've sent a 6-digit code to:
             </Text>
             <Text style={styles.email}>{getValues('email')}</Text>
           </View>
 
           <View style={styles.instructionsContainer}>
             <Text style={styles.instructions}>
-              Click the link in the email to sign in. The link will expire in 1 hour.
+              Check your email for a 6-digit verification code.
             </Text>
             <Text style={styles.instructions}>
-              If you don't see the email, check your spam folder.
+              If you don't see the email, check your spam folder or look for an email from "Supabase Auth".
             </Text>
-            <Text style={[styles.instructions, { marginTop: 16, fontWeight: '600' }]}>
-              Testing tip: Copy the link from your email and paste it in Safari on the simulator to authenticate.
-            </Text>
+          </View>
+
+          <View style={styles.buttonContainer}>
+            <Button
+              title="Enter Code"
+              onPress={() => {
+                router.push({
+                  pathname: '/(auth)/verify-otp',
+                  params: { email: getValues('email') },
+                });
+              }}
+              fullWidth
+              variant="primary"
+              size="md"
+            />
           </View>
 
           <View style={styles.buttonContainer}>

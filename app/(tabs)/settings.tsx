@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Switch, Alert, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Switch, Alert, Modal, ActivityIndicator, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Card } from '../../components/ui/Card';
@@ -87,6 +87,46 @@ export default function SettingsScreen() {
     );
   };
 
+  const handleAboutPress = async () => {
+    const url = 'https://www.nodaste.com';
+    const canOpen = await Linking.canOpenURL(url);
+    if (canOpen) {
+      await Linking.openURL(url);
+    } else {
+      Alert.alert('Error', 'Unable to open link');
+    }
+  };
+
+  const handleTermsPress = async () => {
+    const url = 'https://www.nodaste.com/legal-pages/terms-of-service';
+    const canOpen = await Linking.canOpenURL(url);
+    if (canOpen) {
+      await Linking.openURL(url);
+    } else {
+      Alert.alert('Error', 'Unable to open link');
+    }
+  };
+
+  const handlePrivacyPress = async () => {
+    const url = 'https://www.nodaste.com/legal-pages/privacy-policy';
+    const canOpen = await Linking.canOpenURL(url);
+    if (canOpen) {
+      await Linking.openURL(url);
+    } else {
+      Alert.alert('Error', 'Unable to open link');
+    }
+  };
+
+  const handleSupportPress = async () => {
+    const email = 'mailto:support@nodaste.com?subject=AQBuddy Support Request';
+    const canOpen = await Linking.canOpenURL(email);
+    if (canOpen) {
+      await Linking.openURL(email);
+    } else {
+      Alert.alert('Error', 'Unable to open email client');
+    }
+  };
+
   return (
     <GradientBackground>
       <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
@@ -149,25 +189,25 @@ export default function SettingsScreen() {
           <Card>
             <Text style={styles.sectionTitle}>About</Text>
             
-            <TouchableOpacity style={styles.linkItem}>
+            <TouchableOpacity style={styles.linkItem} onPress={handleAboutPress}>
               <Ionicons name="information-circle-outline" size={20} color="#491124" />
-              <Text style={styles.linkText}>About AQBuddy</Text>
+              <Text style={styles.linkText}>About AQBuddy &amp; Nodaste</Text>
               <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.linkItem}>
+            <TouchableOpacity style={styles.linkItem} onPress={handleTermsPress}>
               <Ionicons name="document-text-outline" size={20} color="#491124" />
               <Text style={styles.linkText}>Terms of Service</Text>
               <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.linkItem}>
+            <TouchableOpacity style={styles.linkItem} onPress={handlePrivacyPress}>
               <Ionicons name="shield-checkmark-outline" size={20} color="#491124" />
               <Text style={styles.linkText}>Privacy Policy</Text>
               <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.linkItem}>
+            <TouchableOpacity style={styles.linkItem} onPress={handleSupportPress}>
               <Ionicons name="help-circle-outline" size={20} color="#491124" />
               <Text style={styles.linkText}>Help & Support</Text>
               <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
@@ -184,7 +224,7 @@ export default function SettingsScreen() {
 
           {/* Version Info */}
           <View style={styles.versionInfo}>
-            <Text style={styles.versionText}>AQBuddy v1.0.1</Text>
+            <Text style={styles.versionText}>AQBuddy v1.0.0</Text>
             <Text style={styles.versionSubtext}>Made with ❤️ by Nodaste</Text>
           </View>
         </View>

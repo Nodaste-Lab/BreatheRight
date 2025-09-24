@@ -25,7 +25,7 @@ const signUpSchema = z.object({
 
 type SignUpForm = z.infer<typeof signUpSchema>;
 
-export default function SignUpScreen() {
+export default function SignUpOtpScreen() {
   const { signUpWithOtp, loading } = useAuthStore();
   const [emailSent, setEmailSent] = useState(false);
 
@@ -180,10 +180,6 @@ export default function SignUpScreen() {
               />
             </View>
 
-            <Text style={styles.termsText}>
-              By creating an account, you agree to our Terms of Service and Privacy Policy
-            </Text>
-
             <View style={styles.buttonContainer}>
               <Button
                 title={loading ? 'Creating Account...' : 'Create Account'}
@@ -196,7 +192,19 @@ export default function SignUpScreen() {
               />
             </View>
 
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>OR</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
             <View style={styles.linkContainer}>
+              <Link href="/(auth)/sign-up">
+                <Text style={styles.linkButton}>Sign Up with Password</Text>
+              </Link>
+            </View>
+
+            <View style={[styles.linkContainer, { marginTop: 16 }]}>
               <Text style={styles.linkText}>Already have an account? </Text>
               <Link href="/(auth)/sign-in">
                 <Text style={styles.linkButton}>Sign In</Text>
@@ -253,15 +261,23 @@ const styles = StyleSheet.create({
   form: {
     marginBottom: 24,
   },
-  termsText: {
-    fontSize: 12,
-    color: '#6B7280',
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 16,
-  },
   buttonContainer: {
     marginBottom: 16,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    color: '#9CA3AF',
+    fontSize: 14,
   },
   linkContainer: {
     flexDirection: 'row',

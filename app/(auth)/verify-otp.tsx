@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -14,21 +14,19 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
-import { supabase } from '../../lib/supabase/client';
 import { useAuthStore } from '../../store/auth';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 
 const otpSchema = z.object({
-  token: z.string().min(6, 'Verification code must be 6 digits'),
+  token: z.string().length(6, 'Verification code must be exactly 6 digits'),
 });
 
 type OtpForm = z.infer<typeof otpSchema>;
 
 export default function VerifyOtpScreen() {
   const { email } = useLocalSearchParams<{ email: string }>();
-  const { initialize } = useAuthStore();
-  const [loading, setLoading] = useState(false);
+  const { verifyOtp, loading } = useAuthStore();
 
   const {
     control,
@@ -43,21 +41,7 @@ export default function VerifyOtpScreen() {
 
   const onSubmit = async (data: OtpForm) => {
     try {
-      setLoading(true);
-
-      const { error } = await supabase.auth.verifyOtp({
-        email: email || '',
-        token: data.token,
-        type: 'email',
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      // Session should be set, initialize auth store
-      await initialize();
-
+      await verifyOtp(email || '', data.token);
       // Navigate to main app
       router.replace('/(tabs)');
     } catch (error: any) {
@@ -66,8 +50,6 @@ export default function VerifyOtpScreen() {
         error.message || 'Invalid verification code. Please try again.',
         [{ text: 'OK' }]
       );
-    } finally {
-      setLoading(false);
     }
   };
 

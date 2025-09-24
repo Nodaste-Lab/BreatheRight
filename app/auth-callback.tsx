@@ -1,16 +1,22 @@
 import React, { useEffect } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '../lib/supabase/client';
 import { useAuthStore } from '../store/auth';
 
 export default function AuthCallbackScreen() {
   const { initialize } = useAuthStore();
+  const params = useLocalSearchParams();
 
   useEffect(() => {
     // Handle the authentication when returning from magic link
     const handleAuth = async () => {
       try {
+        console.log('Auth callback screen - checking session');
+
+        // Small delay to ensure deep link handler has processed
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         // Check for an existing session (magic link should have set it)
         const { data: { session }, error } = await supabase.auth.getSession();
 
@@ -22,6 +28,7 @@ export default function AuthCallbackScreen() {
 
         if (session) {
           // Session exists, user is authenticated
+          console.log('Session found, initializing auth store');
           await initialize();
           router.replace('/(tabs)');
         } else {

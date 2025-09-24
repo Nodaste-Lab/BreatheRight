@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
@@ -21,13 +21,13 @@ import { Button } from '../../components/ui/Button';
 
 const signInSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
 type SignInForm = z.infer<typeof signInSchema>;
 
 export default function SignInScreen() {
-  const { signIn, loading } = useAuthStore();
+  const { signInWithMagicLink, loading } = useAuthStore();
+  const [emailSent, setEmailSent] = useState(false);
 
   const {
     control,
@@ -37,14 +37,15 @@ export default function SignInScreen() {
     resolver: zodResolver(signInSchema),
     defaultValues: {
       email: '',
-      password: '',
     },
   });
 
   const onSubmit = async (data: SignInForm) => {
     try {
-      await signIn(data.email, data.password);
-      router.replace('/(tabs)');
+      const result = await signInWithMagicLink(data.email);
+      if (result.needsEmailConfirmation) {
+        setEmailSent(true);
+      }
     } catch (error: any) {
       Alert.alert(
         'Sign In Failed',
@@ -54,13 +55,78 @@ export default function SignInScreen() {
     }
   };
 
+  const resendEmail = async () => {
+    const { email } = control._formValues;
+    if (email) {
+      await onSubmit({ email });
+    }
+  };
+
+  if (emailSent) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Check Your Email</Text>
+            <Text style={styles.subtitle}>
+              We've sent a 6-digit code to:
+            </Text>
+            <Text style={styles.email}>{control._formValues.email}</Text>
+          </View>
+
+          <View style={styles.instructionsContainer}>
+            <Text style={styles.instructions}>
+              Check your email for a 6-digit verification code.
+            </Text>
+            <Text style={styles.instructions}>
+              If you don't see the email, check your spam folder or look for an email from "Supabase Auth".
+            </Text>
+          </View>
+
+          <View style={styles.buttonContainer}>
+            <Button
+              title="Enter Code"
+              onPress={() => {
+                router.push({
+                  pathname: '/(auth)/verify-otp',
+                  params: { email: control._formValues.email },
+                });
+              }}
+              fullWidth
+              variant="primary"
+              size="md"
+            />
+          </View>
+
+          <View style={styles.buttonContainer}>
+            <Button
+              title="Resend Email"
+              onPress={resendEmail}
+              disabled={loading}
+              loading={loading}
+              fullWidth
+              variant="secondary"
+              size="md"
+            />
+          </View>
+
+          <View style={styles.linkContainer}>
+            <Link href="/(auth)/sign-up">
+              <Text style={styles.linkButton}>Create Account</Text>
+            </Link>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView 
+        <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
@@ -69,7 +135,7 @@ export default function SignInScreen() {
             <View style={styles.header}>
               <Text style={styles.title}>Welcome Back</Text>
               <Text style={styles.subtitle}>
-                Sign in to check air quality in your area
+                Enter your email and we'll send you a code to sign in
               </Text>
             </View>
 
@@ -92,32 +158,11 @@ export default function SignInScreen() {
                   />
                 )}
               />
-
-              <Controller
-                control={control}
-                name="password"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <Input
-                    label="Password"
-                    required
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    secureTextEntry
-                    placeholder="Enter your password"
-                    error={errors.password?.message}
-                  />
-                )}
-              />
-
-              <Link href="/(auth)/forgot-password" style={styles.forgotLink}>
-                <Text style={styles.forgotText}>Forgot your password?</Text>
-              </Link>
             </View>
 
             <View style={styles.buttonContainer}>
               <Button
-                title={loading ? 'Signing In...' : 'Sign In'}
+                title={loading ? 'Sending Code...' : 'Send Code'}
                 onPress={handleSubmit(onSubmit)}
                 disabled={loading}
                 loading={loading}
@@ -125,20 +170,6 @@ export default function SignInScreen() {
                 variant="primary"
                 size="md"
               />
-            </View>
-
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>OR</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <View style={styles.buttonContainer}>
-              <Link href="/(auth)/magic-link" asChild>
-                <TouchableOpacity style={styles.magicLinkButton}>
-                  <Text style={styles.magicLinkButtonText}>Sign In with Magic Link</Text>
-                </TouchableOpacity>
-              </Link>
             </View>
 
             <View style={styles.linkContainer}>
@@ -244,5 +275,22 @@ const styles = StyleSheet.create({
     color: '#491124',
     fontSize: 16,
     fontWeight: '600',
+  },
+  email: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#491124',
+    marginTop: 8,
+  },
+  instructionsContainer: {
+    marginBottom: 32,
+    paddingHorizontal: 16,
+  },
+  instructions: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 12,
+    lineHeight: 20,
   },
 });

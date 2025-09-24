@@ -48,7 +48,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   signUp: async (email: string, password: string, name: string) => {
     set({ loading: true });
-    
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -82,6 +82,27 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       console.log('User created but needs email confirmation');
       set({ loading: false });
     }
+  },
+
+  signUpWithOtp: async (email: string, name: string) => {
+    set({ loading: true });
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+        data: { name }
+      },
+    });
+
+    set({ loading: false });
+
+    if (error) {
+      throw error;
+    }
+
+    // Return success - user needs to check email
+    return { needsEmailConfirmation: true };
   },
 
   signIn: async (email: string, password: string) => {
@@ -119,7 +140,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       email,
       options: {
         shouldCreateUser: true,
-        emailRedirectTo: 'aqbuddy://auth-callback',
       },
     });
 
@@ -131,6 +151,37 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
     // Return success - user needs to check email
     return { needsEmailConfirmation: true };
+  },
+
+  verifyOtp: async (email: string, token: string) => {
+    set({ loading: true });
+
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'email',
+    });
+
+    if (error) {
+      set({ loading: false });
+      throw error;
+    }
+
+    if (data.user && data.session) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+
+      set({
+        user: data.user,
+        profile: profile || null,
+        loading: false,
+      });
+    } else {
+      set({ loading: false });
+    }
   },
 
   signOut: async () => {
