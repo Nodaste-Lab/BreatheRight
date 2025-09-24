@@ -29,6 +29,7 @@ export interface AuthState {
 
 export interface AuthActions {
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithMagicLink: (email: string) => Promise<{ needsEmailConfirmation: boolean }>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;

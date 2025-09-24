@@ -151,7 +151,7 @@ export default function SettingsScreen() {
             
             <TouchableOpacity style={styles.linkItem}>
               <Ionicons name="information-circle-outline" size={20} color="#491124" />
-              <Text style={styles.linkText}>About BreatheRight</Text>
+              <Text style={styles.linkText}>About AQBuddy</Text>
               <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
             </TouchableOpacity>
 

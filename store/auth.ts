@@ -86,7 +86,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   signIn: async (email: string, password: string) => {
     set({ loading: true });
-    
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -110,6 +110,27 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         loading: false,
       });
     }
+  },
+
+  signInWithMagicLink: async (email: string) => {
+    set({ loading: true });
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: 'aqbuddy://auth-callback',
+      },
+    });
+
+    set({ loading: false });
+
+    if (error) {
+      throw error;
+    }
+
+    // Return success - user needs to check email
+    return { needsEmailConfirmation: true };
   },
 
   signOut: async () => {

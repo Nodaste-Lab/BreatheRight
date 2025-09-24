@@ -27,7 +27,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>AQBuddy</string>
+          <string>aqbuddy</string>
           <string>com.benogren.breatheright</string>
         </array>
       </dict>
