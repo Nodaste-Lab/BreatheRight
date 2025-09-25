@@ -8,14 +8,16 @@ import { useAuthStore } from '../../store/auth';
 import { colors } from '@/lib/colors/theme';
 import { GradientBackground } from '@/components/ui/GradientBackground';
 import { useLocationStore } from '../../store/location';
+import { getScheduledNotifications, sendTestNotification } from '../../lib/services/notification-scheduler';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { user, profile, signOut, updateProfile } = useAuthStore();
-  const { fetchUserLocations } = useLocationStore();
+  const { fetchUserLocations, locations } = useLocationStore();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [weatherSourceModalVisible, setWeatherSourceModalVisible] = React.useState(false);
   const [isUpdatingSource, setIsUpdatingSource] = React.useState(false);
+  const [scheduledNotifications, setScheduledNotifications] = React.useState<any[]>([]);
   
   // Type for weather sources - matches the Profile interface
   type WeatherSourceType = 'openweather' | 'microsoft' | 'google' | 'waqi' | 'purpleair' | 'airnow';
@@ -30,6 +32,16 @@ export default function SettingsScreen() {
       setSelectedWeatherSource(profile.weather_source);
     }
   }, [profile?.weather_source]);
+
+  // Load scheduled notifications on mount
+  React.useEffect(() => {
+    loadScheduledNotifications();
+  }, []);
+
+  const loadScheduledNotifications = async () => {
+    const notifications = await getScheduledNotifications();
+    setScheduledNotifications(notifications);
+  };
 
   // Weather source configuration
   // Order by most comprehensive to least comprehensive data coverage
@@ -98,7 +110,7 @@ export default function SettingsScreen() {
   };
 
   const handleTermsPress = async () => {
-    const url = 'https://www.nodaste.com/legal-pages/terms-of-service';
+    const url = 'https://www.nodaste.com/aqbuddy/terms-of-service';
     const canOpen = await Linking.canOpenURL(url);
     if (canOpen) {
       await Linking.openURL(url);
@@ -108,7 +120,7 @@ export default function SettingsScreen() {
   };
 
   const handlePrivacyPress = async () => {
-    const url = 'https://www.nodaste.com/legal-pages/privacy-policy';
+    const url = 'https://www.nodaste.com/aqbuddy/privacy-policy';
     const canOpen = await Linking.canOpenURL(url);
     if (canOpen) {
       await Linking.openURL(url);
@@ -213,6 +225,7 @@ export default function SettingsScreen() {
               <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
             </TouchableOpacity>
           </Card>
+
 
           {/* Account Actions */}
           <Card>
@@ -481,5 +494,21 @@ const styles = StyleSheet.create({
     ...fonts.body.regular,
     color: '#6b7280',
     marginTop: 12,
+  },
+  notificationList: {
+    paddingLeft: 32,
+    paddingTop: 8,
+    paddingBottom: 8,
+  },
+  notificationListTitle: {
+    ...fonts.body.small,
+    color: '#6b7280',
+    marginBottom: 4,
+  },
+  notificationItem: {
+    ...fonts.body.tiny,
+    color: '#9ca3af',
+    marginLeft: 8,
+    marginVertical: 2,
   },
 });

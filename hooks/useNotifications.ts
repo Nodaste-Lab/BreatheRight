@@ -12,9 +12,10 @@ export const useNotifications = () => {
       const hasPermission = await requestNotificationPermissions();
       if (hasPermission) {
         console.log('✅ Notification permissions granted');
-        // Initialize listeners
-        const cleanup = initializeNotificationListeners();
-        return cleanup;
+        // TEMPORARILY DISABLED: Notification listeners causing loops in Expo Go
+        // Uncomment for production build
+        // const cleanup = initializeNotificationListeners();
+        // return cleanup;
       } else {
         console.warn('❌ Notification permissions denied');
       }

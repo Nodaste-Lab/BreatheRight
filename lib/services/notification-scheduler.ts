@@ -192,25 +192,37 @@ export async function cancelLocationNotifications(locationId: string): Promise<v
 /**
  * Update scheduled notifications for a location based on preferences
  */
-export async function updateLocationNotifications(locationId: string): Promise<void> {
+export async function updateLocationNotifications(locationId: string, prefs?: any): Promise<void> {
   try {
+    console.log(`Updating notifications for location ${locationId}`);
+
     // Cancel existing notifications for this location
     await cancelLocationNotifications(locationId);
 
-    // Get current preferences
-    const { preferences } = useAlertStore.getState();
-    const locationPrefs = preferences.find(p => p.locationId === locationId);
+    // Get current preferences - use passed prefs or fetch from store
+    let locationPrefs = prefs;
+    if (!locationPrefs) {
+      const { preferences } = useAlertStore.getState();
+      locationPrefs = preferences.find(p => p.locationId === locationId);
+    }
 
-    if (!locationPrefs) return;
+    console.log('Location preferences:', locationPrefs);
+
+    if (!locationPrefs) {
+      console.log('No preferences found for location');
+      return;
+    }
 
     // Schedule morning report if enabled
     if (locationPrefs.morningReportEnabled) {
-      await scheduleMorningReport(locationId, locationPrefs.morningReportTime);
+      const notifId = await scheduleMorningReport(locationId, locationPrefs.morningReportTime);
+      console.log(`Scheduled morning report with ID: ${notifId}`);
     }
 
     // Schedule evening report if enabled
     if (locationPrefs.eveningReportEnabled) {
-      await scheduleEveningReport(locationId, locationPrefs.eveningReportTime);
+      const notifId = await scheduleEveningReport(locationId, locationPrefs.eveningReportTime);
+      console.log(`Scheduled evening report with ID: ${notifId}`);
     }
 
     console.log(`Updated notifications for location ${locationId}`);
@@ -224,31 +236,34 @@ export async function updateLocationNotifications(locationId: string): Promise<v
  */
 export async function handleNotificationReceived(notification: Notifications.Notification): Promise<void> {
   const { data } = notification.request.content;
-  
-  if (data?.type === 'morning-report' || data?.type === 'evening-report') {
+
+  // Only process notifications that are scheduled and not already generated
+  if ((data?.type === 'morning-report' || data?.type === 'evening-report') &&
+      data?.scheduled === true &&
+      data?.generated !== true) {
     const locationId = data.locationId as string;
-    
+
     try {
       // Get fresh location data
       const locationData = await getLocationDataForNotification(locationId);
       if (!locationData) return;
 
       // Generate AI alert
-      const alertMessage = data.type === 'morning-report' 
+      const alertMessage = data.type === 'morning-report'
         ? await generateMorningAlert(locationData)
         : await generateEveningAlert(locationData);
 
       // Update the notification with AI-generated content
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: data.type === 'morning-report' 
-            ? `🌅 ${locationData.location.name}` 
+          title: data.type === 'morning-report'
+            ? `🌅 ${locationData.location.name}`
             : `🌙 ${locationData.location.name}`,
           body: alertMessage,
-          data: { 
-            type: data.type, 
+          data: {
+            type: data.type,
             locationId,
-            generated: true 
+            generated: true  // Mark as generated to prevent loops
           },
         },
         trigger: null, // Show immediately
@@ -264,14 +279,14 @@ export async function handleNotificationReceived(notification: Notifications.Not
 /**
  * Initialize notification listeners
  */
-export function initializeNotificationListeners(): void {
+export function initializeNotificationListeners(): (() => void) {
   // Listen for notifications received while app is in foreground
   const subscription = Notifications.addNotificationReceivedListener(handleNotificationReceived);
 
   // Listen for notification responses (when user taps notification)
   const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
     const { data } = response.notification.request.content;
-    
+
     if (data?.locationId) {
       // Navigate to location detail screen
       // This would need to be implemented with your navigation system

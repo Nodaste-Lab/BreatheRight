@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase/client';
-import { updateLocationNotifications } from '../lib/services/notification-scheduler';
 
 // Alert preference types
 export interface AlertPreferences {
@@ -120,27 +119,54 @@ export const useAlertStore = create<AlertStore>((set, get) => ({
       // Update local state
       const currentPreferences = get().preferences;
       const existingIndex = currentPreferences.findIndex(p => p.locationId === locationId);
-      
+
+      let mergedPreferences;
+
       if (existingIndex >= 0) {
         // Update existing preference
         const updatedPreferences = [...currentPreferences];
-        updatedPreferences[existingIndex] = {
+        mergedPreferences = {
           ...updatedPreferences[existingIndex],
           ...updates,
           updatedAt: new Date().toISOString(),
         };
+        updatedPreferences[existingIndex] = mergedPreferences;
         set({ preferences: updatedPreferences, loading: false });
       } else {
+        // Create new preference with defaults
+        mergedPreferences = {
+          id: '', // Will be set by database
+          locationId,
+          morningReportEnabled: false,
+          morningReportTime: '08:00',
+          eveningReportEnabled: false,
+          eveningReportTime: '18:00',
+          aqiThresholdEnabled: false,
+          aqiThreshold: 100,
+          pollenAlertEnabled: false,
+          stormAlertEnabled: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          ...updates,
+        };
         // Refresh from database if this is a new preference
         await get().fetchAlertPreferences();
       }
 
-      // Update notification scheduling
-      try {
-        await updateLocationNotifications(locationId);
-      } catch (notificationError) {
-        console.error('Failed to update notifications:', notificationError);
-        // Don't fail the main operation if notification scheduling fails
+      // Only update notification scheduling for morning/evening report changes
+      if (updates.morningReportEnabled !== undefined ||
+          updates.eveningReportEnabled !== undefined ||
+          updates.morningReportTime !== undefined ||
+          updates.eveningReportTime !== undefined) {
+        try {
+          console.log('Updating notifications for report settings:', mergedPreferences);
+          // Dynamically import to avoid circular dependency
+          const { updateLocationNotifications } = await import('../lib/services/notification-scheduler');
+          await updateLocationNotifications(locationId, mergedPreferences);
+        } catch (notificationError) {
+          console.error('Failed to update notifications:', notificationError);
+          // Don't fail the main operation if notification scheduling fails
+        }
       }
 
       set({ loading: false });
@@ -177,6 +203,7 @@ export const useAlertStore = create<AlertStore>((set, get) => ({
       
       // Set up notifications for the new preferences (none initially)
       try {
+        const { updateLocationNotifications } = await import('../lib/services/notification-scheduler');
         await updateLocationNotifications(locationId);
       } catch (notificationError) {
         console.error('Failed to set up initial notifications:', notificationError);
@@ -202,7 +229,8 @@ export const useAlertStore = create<AlertStore>((set, get) => ({
       
       // Cancel notifications for this location
       try {
-        await updateLocationNotifications(locationId);
+        const { cancelLocationNotifications } = await import('../lib/services/notification-scheduler');
+        await cancelLocationNotifications(locationId);
       } catch (notificationError) {
         console.error('Failed to cancel notifications:', notificationError);
       }

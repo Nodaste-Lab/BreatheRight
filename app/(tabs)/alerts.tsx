@@ -123,56 +123,6 @@ export default function AlertsScreen() {
                         />
                       </View>
                       
-                      {/* Threshold Alerts */}
-                      <View style={styles.alertItem}>
-                        <View style={styles.alertItemLeft}>
-                          <Ionicons name="warning-outline" size={20} color="#ef4444" />
-                          <View style={styles.alertText}>
-                            <Text style={styles.alertName}>Poor Air Quality</Text>
-                            <Text style={styles.alertDescription}>Alert when AQI exceeds 100</Text>
-                          </View>
-                        </View>
-                        <Switch
-                          value={prefs?.aqiThresholdEnabled || false}
-                          onValueChange={(value) => toggleAlert(location.id, 'aqiThresholdEnabled', value)}
-                          trackColor={{ false: '#e5e7eb', true: '#3b82f6' }}
-                          thumbColor={prefs?.aqiThresholdEnabled ? '#ffffff' : '#f3f4f6'}
-                        />
-                      </View>
-                      
-                      {/* Pollen Alerts */}
-                      <View style={styles.alertItem}>
-                        <View style={styles.alertItemLeft}>
-                          <Ionicons name="flower-outline" size={20} color="#10b981" />
-                          <View style={styles.alertText}>
-                            <Text style={styles.alertName}>High Pollen</Text>
-                            <Text style={styles.alertDescription}>Alert for allergy seasons</Text>
-                          </View>
-                        </View>
-                        <Switch
-                          value={prefs?.pollenAlertEnabled || false}
-                          onValueChange={(value) => toggleAlert(location.id, 'pollenAlertEnabled', value)}
-                          trackColor={{ false: '#e5e7eb', true: '#3b82f6' }}
-                          thumbColor={prefs?.pollenAlertEnabled ? '#ffffff' : '#f3f4f6'}
-                        />
-                      </View>
-                      
-                      {/* Storm Alerts */}
-                      <View style={styles.alertItem}>
-                        <View style={styles.alertItemLeft}>
-                          <Ionicons name="thunderstorm-outline" size={20} color="#8b5cf6" />
-                          <View style={styles.alertText}>
-                            <Text style={styles.alertName}>Severe Weather</Text>
-                            <Text style={styles.alertDescription}>Storm and lightning warnings</Text>
-                          </View>
-                        </View>
-                        <Switch
-                          value={prefs?.stormAlertEnabled || false}
-                          onValueChange={(value) => toggleAlert(location.id, 'stormAlertEnabled', value)}
-                          trackColor={{ false: '#e5e7eb', true: '#3b82f6' }}
-                          thumbColor={prefs?.stormAlertEnabled ? '#ffffff' : '#f3f4f6'}
-                        />
-                      </View>
                     </View>
                   )}
                 </Card>

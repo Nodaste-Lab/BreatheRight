@@ -9,8 +9,11 @@ import { useLocationStore } from '@/store/location';
 import { colors } from '@/lib/colors/theme';
 import { fonts } from '../../lib/fonts';
 import { GradientBackground } from '@/components/ui/GradientBackground';
+import { useNotifications } from '@/hooks/useNotifications';
 
 export default function TabLayout() {
+  // Initialize notification listeners
+  useNotifications();
   const burgundyColor = colors.burgundy;
   const activeColor = colors.activeTab;
   const backgroundColor = colors.background;
