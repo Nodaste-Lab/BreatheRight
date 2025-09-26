@@ -95,7 +95,7 @@
     <false/>
     <key>UIBackgroundModes</key>
     <array>
-      <string>background-processing</string>
+      <string>processing</string>
       <string>remote-notification</string>
       <string>fetch</string>
     </array>
