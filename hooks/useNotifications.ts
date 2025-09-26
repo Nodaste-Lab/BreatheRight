@@ -16,8 +16,12 @@ export const useNotifications = () => {
       if (hasPermission) {
         console.log('✅ Notification permissions granted');
 
-        // Register background task for notification generation
-        await registerBackgroundNotificationTask();
+        // Register background task for notification generation (only in production)
+        try {
+          await registerBackgroundNotificationTask();
+        } catch (error) {
+          console.log('Background tasks not supported in this environment (Expo Go)');
+        }
 
         // Enable notification listeners for production build
         const cleanup = initializeNotificationListeners();

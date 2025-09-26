@@ -411,6 +411,7 @@ const styles = StyleSheet.create({
   versionInfo: {
     alignItems: 'center',
     paddingVertical: 24,
+    marginBottom: 16,
   },
   versionText: {
     ...fonts.body.small,
@@ -419,7 +420,8 @@ const styles = StyleSheet.create({
   },
   versionSubtext: {
     ...fonts.body.tiny,
-    color: '#d1d5db',
+    color: '#9ca3af',
+    paddingBottom: 24,
   },
   modalOverlay: {
     flex: 1,

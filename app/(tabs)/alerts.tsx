@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Switch, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Switch, TouchableOpacity, Platform, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../../components/ui/Card';
 import { fonts } from '../../lib/fonts';
@@ -8,10 +8,27 @@ import { useLocationStore } from '../../store/location';
 import { useAlertStore } from '../../store/alerts';
 import type { AlertPreferences } from '../../store/alerts';
 
+
 export default function AlertsScreen() {
   const { locations, fetchUserLocations } = useLocationStore();
   const { preferences, fetchAlertPreferences, updateLocationAlerts, createDefaultPreferences } = useAlertStore();
   const [expandedLocation, setExpandedLocation] = useState<string | null>(null);
+  const [showTimePicker, setShowTimePicker] = useState<{ locationId: string; type: 'morning' | 'evening' } | null>(null);
+
+  // Initialize temp time for picker
+  const getCurrentTime = (locationId: string, type: 'morning' | 'evening') => {
+    const prefs = getLocationPreferences(locationId);
+    const currentTime = type === 'morning'
+      ? (prefs?.morningReportTime || '08:00')
+      : (prefs?.eveningReportTime || '18:00');
+    const [hours, minutes] = currentTime.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours);
+    date.setMinutes(minutes);
+    return date;
+  };
+
+  const [tempTime, setTempTime] = useState<Date>(new Date());
 
   useEffect(() => {
     fetchUserLocations();
@@ -21,6 +38,38 @@ export default function AlertsScreen() {
   // Get preferences for a specific location
   const getLocationPreferences = (locationId: string): AlertPreferences | null => {
     return preferences.find(p => p.locationId === locationId) || null;
+  };
+
+  // Update time for a location
+  const updateTime = async (locationId: string, type: 'morning' | 'evening', time: Date) => {
+    const hours = time.getHours().toString().padStart(2, '0');
+    const minutes = time.getMinutes().toString().padStart(2, '0');
+    const timeString = `${hours}:${minutes}`;
+
+    const field = type === 'morning' ? 'morningReportTime' : 'eveningReportTime';
+
+    try {
+      const existing = getLocationPreferences(locationId);
+      if (!existing) {
+        const defaultPreferences = {
+          morningReportEnabled: false,
+          eveningReportEnabled: false,
+          aqiThresholdEnabled: false,
+          pollenAlertEnabled: false,
+          stormAlertEnabled: false,
+          morningReportTime: '08:00',
+          eveningReportTime: '18:00',
+          aqiThreshold: 100,
+          [field]: timeString,
+        };
+        await updateLocationAlerts(locationId, defaultPreferences);
+      } else {
+        await updateLocationAlerts(locationId, { [field]: timeString });
+      }
+      setShowTimePicker(null);
+    } catch (error) {
+      console.error('Failed to update time:', error);
+    }
   };
 
   // Toggle alert setting for a location
@@ -95,7 +144,19 @@ export default function AlertsScreen() {
                           <Ionicons name="sunny-outline" size={20} color="#f59e0b" />
                           <View style={styles.alertText}>
                             <Text style={styles.alertName}>Morning Report</Text>
-                            <Text style={styles.alertDescription}>Daily AI summary at 8:00 AM</Text>
+                            <TouchableOpacity
+                              onPress={() => {
+                                const time = getCurrentTime(location.id, 'morning');
+                                setTempTime(time);
+                                setShowTimePicker({ locationId: location.id, type: 'morning' });
+                              }}
+                              style={styles.timeButton}
+                            >
+                              <Text style={styles.alertDescription}>
+                                Daily AI summary at {prefs?.morningReportTime || '08:00'}
+                              </Text>
+                              <Ionicons name="time-outline" size={14} color="#3b82f6" />
+                            </TouchableOpacity>
                           </View>
                         </View>
                         <Switch
@@ -112,7 +173,19 @@ export default function AlertsScreen() {
                           <Ionicons name="moon-outline" size={20} color="#6366f1" />
                           <View style={styles.alertText}>
                             <Text style={styles.alertName}>Evening Report</Text>
-                            <Text style={styles.alertDescription}>Daily summary at 6:00 PM</Text>
+                            <TouchableOpacity
+                              onPress={() => {
+                                const time = getCurrentTime(location.id, 'evening');
+                                setTempTime(time);
+                                setShowTimePicker({ locationId: location.id, type: 'evening' });
+                              }}
+                              style={styles.timeButton}
+                            >
+                              <Text style={styles.alertDescription}>
+                                Daily summary at {prefs?.eveningReportTime || '18:00'}
+                              </Text>
+                              <Ionicons name="time-outline" size={14} color="#3b82f6" />
+                            </TouchableOpacity>
                           </View>
                         </View>
                         <Switch
@@ -155,6 +228,91 @@ export default function AlertsScreen() {
 
         </View>
         </ScrollView>
+
+        {/* Time Picker Modal */}
+        {showTimePicker && (
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={true}
+            onRequestClose={() => setShowTimePicker(null)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <TouchableOpacity
+                    onPress={() => setShowTimePicker(null)}
+                    style={styles.modalButton}
+                  >
+                    <Text style={styles.modalButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.modalTitle}>
+                    {showTimePicker.type === 'morning' ? 'Morning' : 'Evening'} Report Time
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      updateTime(showTimePicker.locationId, showTimePicker.type, tempTime);
+                    }}
+                    style={styles.modalButton}
+                  >
+                    <Text style={[styles.modalButtonText, styles.saveButton]}>Save</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.timePickerContainer}>
+                  <Text style={styles.timeDisplay}>
+                    {tempTime.toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true
+                    })}
+                  </Text>
+                  <View style={styles.timeControls}>
+                    <TouchableOpacity
+                      style={styles.timeControlButton}
+                      onPress={() => {
+                        const newTime = new Date(tempTime);
+                        newTime.setHours(newTime.getHours() - 1);
+                        setTempTime(newTime);
+                      }}
+                    >
+                      <Text style={styles.timeButtonText}>-1h</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.timeControlButton}
+                      onPress={() => {
+                        const newTime = new Date(tempTime);
+                        newTime.setMinutes(newTime.getMinutes() - 15);
+                        setTempTime(newTime);
+                      }}
+                    >
+                      <Text style={styles.timeButtonText}>-15m</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.timeControlButton}
+                      onPress={() => {
+                        const newTime = new Date(tempTime);
+                        newTime.setMinutes(newTime.getMinutes() + 15);
+                        setTempTime(newTime);
+                      }}
+                    >
+                      <Text style={styles.timeButtonText}>+15m</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.timeControlButton}
+                      onPress={() => {
+                        const newTime = new Date(tempTime);
+                        newTime.setHours(newTime.getHours() + 1);
+                        setTempTime(newTime);
+                      }}
+                    >
+                      <Text style={styles.timeButtonText}>+1h</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </Modal>
+        )}
       </SafeAreaView>
     </GradientBackground>
   );
@@ -250,6 +408,73 @@ const styles = StyleSheet.create({
   alertDescription: {
     ...fonts.body.small,
     color: '#6b7280',
+  },
+  timeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    width: '90%',
+    maxWidth: 350,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  modalButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  modalButtonText: {
+    fontSize: 16,
+    color: '#6b7280',
+  },
+  saveButton: {
+    color: '#3b82f6',
+    fontWeight: '600',
+  },
+  timePickerContainer: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  timeDisplay: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 20,
+  },
+  timeControls: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  timeControlButton: {
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  timeButtonText: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '600',
   },
   infoSection: {
     flexDirection: 'row',

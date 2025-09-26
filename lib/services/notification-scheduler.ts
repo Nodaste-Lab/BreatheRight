@@ -88,8 +88,11 @@ export async function scheduleMorningReport(locationId: string, time: string): P
     const [hours, minutes] = time.split(':').map(Number);
 
     // Generate the alert content immediately
-    const { getCurrentLocationData, currentLocation } = useLocationStore.getState();
+    const { getCurrentLocationData } = useLocationStore.getState();
     await getCurrentLocationData(locationId);
+
+    // Get the updated location data after fetching
+    const { currentLocation } = useLocationStore.getState();
 
     if (!currentLocation) {
       console.error('Failed to get location data for notification');
@@ -101,9 +104,9 @@ export async function scheduleMorningReport(locationId: string, time: string): P
 
     // Schedule daily at specified time with pre-generated content
     const trigger: Notifications.DailyTriggerInput = {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
       hour: hours,
       minute: minutes,
-      repeats: true,
     };
 
     const notificationId = await Notifications.scheduleNotificationAsync({
@@ -140,8 +143,11 @@ export async function scheduleEveningReport(locationId: string, time: string): P
     const [hours, minutes] = time.split(':').map(Number);
 
     // Generate the alert content immediately
-    const { getCurrentLocationData, currentLocation } = useLocationStore.getState();
+    const { getCurrentLocationData } = useLocationStore.getState();
     await getCurrentLocationData(locationId);
+
+    // Get the updated location data after fetching
+    const { currentLocation } = useLocationStore.getState();
 
     if (!currentLocation) {
       console.error('Failed to get location data for notification');
@@ -153,9 +159,9 @@ export async function scheduleEveningReport(locationId: string, time: string): P
 
     // Schedule daily at specified time with pre-generated content
     const trigger: Notifications.DailyTriggerInput = {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
       hour: hours,
       minute: minutes,
-      repeats: true,
     };
 
     const notificationId = await Notifications.scheduleNotificationAsync({

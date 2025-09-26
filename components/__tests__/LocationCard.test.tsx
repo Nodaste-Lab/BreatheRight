@@ -9,7 +9,13 @@ import type { Location } from '../../types/location';
 jest.mock('../../store/location');
 const mockUseLocationStore = useLocationStore as jest.MockedFunction<typeof useLocationStore>;
 
-// Mock Alert is handled in jest.setup.js
+// Mock Alert
+jest.mock('react-native', () => ({
+  ...jest.requireActual('react-native'),
+  Alert: {
+    alert: jest.fn(),
+  },
+}))
 
 describe('LocationCard', () => {
   const mockLocation: Location = {
