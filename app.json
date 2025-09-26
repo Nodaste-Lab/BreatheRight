@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.benogren.breatheright",
-      "buildNumber": "8",
+      "buildNumber": "9",
       "config": {
         "usesNonExemptEncryption": false
       },
@@ -44,6 +44,16 @@
           "icon": "./assets/images/icon.png",
           "color": "#ffffff"
         }
+      ],
+      [
+        "expo-background-fetch",
+        {
+          "stopOnTerminate": false,
+          "startOnBoot": true
+        }
+      ],
+      [
+        "expo-task-manager"
       ],
       "expo-secure-store",
       "expo-font",

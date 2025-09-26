@@ -86,8 +86,20 @@ export async function scheduleMorningReport(locationId: string, time: string): P
 
     // Parse time (HH:MM format)
     const [hours, minutes] = time.split(':').map(Number);
-    
-    // Schedule daily at specified time
+
+    // Generate the alert content immediately
+    const { getCurrentLocationData, currentLocation } = useLocationStore.getState();
+    await getCurrentLocationData(locationId);
+
+    if (!currentLocation) {
+      console.error('Failed to get location data for notification');
+      return null;
+    }
+
+    // Generate AI alert now
+    const alertMessage = await generateMorningAlert(currentLocation);
+
+    // Schedule daily at specified time with pre-generated content
     const trigger: Notifications.DailyTriggerInput = {
       hour: hours,
       minute: minutes,
@@ -96,12 +108,12 @@ export async function scheduleMorningReport(locationId: string, time: string): P
 
     const notificationId = await Notifications.scheduleNotificationAsync({
       content: {
-        title: '🌅 Morning Air Quality Report',
-        body: 'Generating your personalized air quality summary...',
-        data: { 
-          type: 'morning-report', 
+        title: `🌅 ${currentLocation.location.name}`,
+        body: alertMessage,
+        data: {
+          type: 'morning-report',
           locationId,
-          scheduled: true 
+          scheduled: true
         },
         categoryIdentifier: 'air-quality-reports',
       },
@@ -126,8 +138,20 @@ export async function scheduleEveningReport(locationId: string, time: string): P
 
     // Parse time (HH:MM format)
     const [hours, minutes] = time.split(':').map(Number);
-    
-    // Schedule daily at specified time
+
+    // Generate the alert content immediately
+    const { getCurrentLocationData, currentLocation } = useLocationStore.getState();
+    await getCurrentLocationData(locationId);
+
+    if (!currentLocation) {
+      console.error('Failed to get location data for notification');
+      return null;
+    }
+
+    // Generate AI alert now
+    const alertMessage = await generateEveningAlert(currentLocation);
+
+    // Schedule daily at specified time with pre-generated content
     const trigger: Notifications.DailyTriggerInput = {
       hour: hours,
       minute: minutes,
@@ -136,12 +160,12 @@ export async function scheduleEveningReport(locationId: string, time: string): P
 
     const notificationId = await Notifications.scheduleNotificationAsync({
       content: {
-        title: '🌙 Evening Air Quality Summary',
-        body: 'Your daily air quality report is ready...',
-        data: { 
-          type: 'evening-report', 
+        title: `🌙 ${currentLocation.location.name}`,
+        body: alertMessage,
+        data: {
+          type: 'evening-report',
           locationId,
-          scheduled: true 
+          scheduled: true
         },
         categoryIdentifier: 'air-quality-reports',
       },
@@ -225,6 +249,14 @@ export async function updateLocationNotifications(locationId: string, prefs?: an
       console.log(`Scheduled evening report with ID: ${notifId}`);
     }
 
+    // List all scheduled notifications for verification
+    const allNotifications = await getScheduledNotifications();
+    console.log('All scheduled notifications:', allNotifications.map(n => ({
+      id: n.identifier,
+      title: n.content.title,
+      trigger: n.trigger
+    })));
+
     console.log(`Updated notifications for location ${locationId}`);
   } catch (error) {
     console.error('Failed to update location notifications:', error);
@@ -236,44 +268,8 @@ export async function updateLocationNotifications(locationId: string, prefs?: an
  */
 export async function handleNotificationReceived(notification: Notifications.Notification): Promise<void> {
   const { data } = notification.request.content;
-
-  // Only process notifications that are scheduled and not already generated
-  if ((data?.type === 'morning-report' || data?.type === 'evening-report') &&
-      data?.scheduled === true &&
-      data?.generated !== true) {
-    const locationId = data.locationId as string;
-
-    try {
-      // Get fresh location data
-      const locationData = await getLocationDataForNotification(locationId);
-      if (!locationData) return;
-
-      // Generate AI alert
-      const alertMessage = data.type === 'morning-report'
-        ? await generateMorningAlert(locationData)
-        : await generateEveningAlert(locationData);
-
-      // Update the notification with AI-generated content
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: data.type === 'morning-report'
-            ? `🌅 ${locationData.location.name}`
-            : `🌙 ${locationData.location.name}`,
-          body: alertMessage,
-          data: {
-            type: data.type,
-            locationId,
-            generated: true  // Mark as generated to prevent loops
-          },
-        },
-        trigger: null, // Show immediately
-      });
-
-    } catch (error) {
-      console.error('Failed to generate AI alert for notification:', error);
-      // Keep the default notification if AI generation fails
-    }
-  }
+  console.log('Notification received in foreground:', data);
+  // No need to regenerate content since we pre-generate it when scheduling
 }
 
 /**

@@ -1,9 +1,12 @@
 import { useEffect } from 'react';
-import { 
-  initializeNotificationListeners, 
+import {
+  initializeNotificationListeners,
   requestNotificationPermissions,
-  sendTestNotification 
+  sendTestNotification
 } from '../lib/services/notification-scheduler';
+import {
+  registerBackgroundNotificationTask
+} from '../lib/services/notification-background';
 
 export const useNotifications = () => {
   useEffect(() => {
@@ -12,23 +15,27 @@ export const useNotifications = () => {
       const hasPermission = await requestNotificationPermissions();
       if (hasPermission) {
         console.log('✅ Notification permissions granted');
-        // TEMPORARILY DISABLED: Notification listeners causing loops in Expo Go
-        // Uncomment for production build
-        // const cleanup = initializeNotificationListeners();
-        // return cleanup;
+
+        // Register background task for notification generation
+        await registerBackgroundNotificationTask();
+
+        // Enable notification listeners for production build
+        const cleanup = initializeNotificationListeners();
+        return cleanup;
       } else {
         console.warn('❌ Notification permissions denied');
       }
     };
 
-    const cleanup = setup();
-    
-    // Cleanup function
-    return () => {
-      if (cleanup && typeof cleanup === 'function') {
-        cleanup();
+    setup().then(cleanupFn => {
+      // Store cleanup function if returned
+      if (cleanupFn && typeof cleanupFn === 'function') {
+        return () => cleanupFn();
       }
-    };
+    });
+
+    // Return empty cleanup by default
+    return () => {};
   }, []);
 
   // Function to send test notifications
