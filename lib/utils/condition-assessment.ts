@@ -42,7 +42,7 @@ export function assessOverallConditions(data: LocationData): ConditionAssessment
   } else if (hasAnyPoor || weightedScore >= 1.5) {
     severity = 'poor';
     lungIcon = require('../../assets/kawaii/lungs-impacted.png');
-  } else if (weightedScore >= 0.8) {
+  } else if (weightedScore >= 0.5) {
     severity = 'moderate';
     lungIcon = require('../../assets/kawaii/lungs-sensitive.png');
   } else {
