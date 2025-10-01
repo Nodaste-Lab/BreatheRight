@@ -36,10 +36,10 @@ export function assessOverallConditions(data: LocationData): ConditionAssessment
   let severity: ConditionSeverity;
   let lungIcon;
   
-  if (hasAnySevere || weightedScore >= 2.5) {
+  if (hasAnySevere || weightedScore >= 2.3) {
     severity = 'severe';
     lungIcon = require('../../assets/kawaii/lungs-dangerous.png');
-  } else if (hasAnyPoor || weightedScore >= 1.5) {
+  } else if (hasAnyPoor || weightedScore >= 1.3) {
     severity = 'poor';
     lungIcon = require('../../assets/kawaii/lungs-impacted.png');
   } else if (weightedScore >= 0.5) {
