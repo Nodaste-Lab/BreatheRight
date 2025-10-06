@@ -11,13 +11,14 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.benogren.breatheright",
-      "buildNumber": "11",
+      "buildNumber": "12",
       "config": {
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
         "UIBackgroundModes": ["background-processing", "remote-notification"]
-      }
+      },
+      "requireFullPurchaseFlow": true
     },
     "android": {
       "adaptiveIcon": {
