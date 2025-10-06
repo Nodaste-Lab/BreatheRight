@@ -83,7 +83,7 @@ Check the comprehensive guides:
 - Backend setup → `docs/SUBSCRIPTION_BACKEND_SETUP.md`
 - Deployment steps → `supabase/DEPLOYMENT_INSTRUCTIONS.md`
 
-## Summary
+## Summary 
 
 🎯 **Total time to deploy: ~30 minutes** 
 📱 **Then test with sandbox purchases**
