@@ -85,6 +85,6 @@ Check the comprehensive guides:
 
 ## Summary
 
-🎯 **Total time to deploy: ~30 minutes**
+🎯 **Total time to deploy: ~30 minutes** 
 📱 **Then test with sandbox purchases**
 🚀 **Ready for production after hardening**
