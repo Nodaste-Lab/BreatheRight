@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import {
   initConnection,
   endConnection,
-  getProducts,
+  getSubscriptions,
   requestSubscription,
   purchaseUpdatedListener,
   purchaseErrorListener,
@@ -235,25 +235,48 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     try {
       set({ loading: true, error: null });
 
-      if (Platform.OS === 'ios') {
-        await requestSubscription({
-          sku: productId,
-        });
-      } else {
-        // For Android
-        await requestSubscription({
-          sku: productId,
-        });
+      // react-native-iap v14+ requires getting subscriptions first for offer tokens (Android)
+      const subscriptions = await getSubscriptions({ skus: [productId] });
+
+      if (!subscriptions || subscriptions.length === 0) {
+        throw new Error('Subscription product not found');
       }
+
+      // For Android, we need the offer token
+      let offerToken: string | undefined;
+      if (Platform.OS === 'android') {
+        const subscription = subscriptions[0];
+        if (
+          subscription?.subscriptionOfferDetails &&
+          subscription.subscriptionOfferDetails.length > 0
+        ) {
+          offerToken = subscription.subscriptionOfferDetails[0]?.offerToken;
+        }
+      }
+
+      // Request subscription with proper parameters
+      await requestSubscription({
+        sku: productId,
+        ...(offerToken && {
+          subscriptionOffers: [
+            {
+              sku: productId,
+              offerToken: offerToken,
+            },
+          ],
+        }),
+      });
 
       // The purchase listener will handle the completion
     } catch (error) {
       console.error('Error purchasing subscription:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to purchase subscription';
       set({
-        error: error instanceof Error ? error.message : 'Failed to purchase subscription',
+        error: errorMessage,
         loading: false,
       });
-      throw error;
+      // Alert will be shown by the component
+      throw new Error(errorMessage);
     }
   },
 
