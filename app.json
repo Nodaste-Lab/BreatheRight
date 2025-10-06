@@ -17,8 +17,7 @@
       },
       "infoPlist": {
         "UIBackgroundModes": ["background-processing", "remote-notification"]
-      },
-      "requireFullPurchaseFlow": true
+      }
     },
     "android": {
       "adaptiveIcon": {
