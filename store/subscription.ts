@@ -235,8 +235,13 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     try {
       set({ loading: true, error: null });
 
+      console.log('Starting purchase for:', productId);
+      console.log('getSubscriptions available?', typeof getSubscriptions);
+      console.log('requestSubscription available?', typeof requestSubscription);
+
       // react-native-iap v14+ requires getting subscriptions first for offer tokens (Android)
       const subscriptions = await getSubscriptions({ skus: [productId] });
+      console.log('Retrieved subscriptions:', subscriptions);
 
       if (!subscriptions || subscriptions.length === 0) {
         throw new Error('Subscription product not found');
@@ -255,6 +260,11 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       }
 
       // Request subscription with proper parameters
+      console.log('Requesting subscription with params:', {
+        sku: productId,
+        offerToken,
+      });
+
       await requestSubscription({
         sku: productId,
         ...(offerToken && {
@@ -267,9 +277,11 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
         }),
       });
 
+      console.log('Purchase request sent successfully');
       // The purchase listener will handle the completion
     } catch (error) {
       console.error('Error purchasing subscription:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
       const errorMessage = error instanceof Error ? error.message : 'Failed to purchase subscription';
       set({
         error: errorMessage,
