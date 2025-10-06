@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import {
   initConnection,
   endConnection,
-  getSubscriptions,
-  requestSubscription,
+  fetchProducts,
+  requestPurchase,
   purchaseUpdatedListener,
   purchaseErrorListener,
   finishTransaction,
@@ -236,46 +236,59 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       set({ loading: true, error: null });
 
       console.log('Starting purchase for:', productId);
-      console.log('getSubscriptions available?', typeof getSubscriptions);
-      console.log('requestSubscription available?', typeof requestSubscription);
+      console.log('fetchProducts available?', typeof fetchProducts);
+      console.log('requestPurchase available?', typeof requestPurchase);
 
-      // react-native-iap v14+ requires getting subscriptions first for offer tokens (Android)
-      const subscriptions = await getSubscriptions({ skus: [productId] });
-      console.log('Retrieved subscriptions:', subscriptions);
+      // react-native-iap v14+ uses fetchProducts instead of getSubscriptions
+      const products = await fetchProducts({ skus: [productId], type: 'subs' });
+      console.log('Retrieved products:', products);
 
-      if (!subscriptions || subscriptions.length === 0) {
-        throw new Error('Subscription product not found');
+      if (!products || products.length === 0) {
+        // Check if running in simulator (IAP not available)
+        const isSimulator = Platform.OS === 'ios' && !Platform.isPad && (await import('expo-device')).default.isDevice === false;
+
+        if (isSimulator) {
+          console.warn('IAP not available in iOS Simulator. Please test on a real device or TestFlight.');
+          throw new Error('In-app purchases are not available in the iOS Simulator. Please test on a real device or via TestFlight.');
+        }
+
+        throw new Error('Subscription product not found. Make sure products are configured in App Store Connect.');
       }
+
+      const product = products[0];
 
       // For Android, we need the offer token
       let offerToken: string | undefined;
-      if (Platform.OS === 'android') {
-        const subscription = subscriptions[0];
-        if (
-          subscription?.subscriptionOfferDetails &&
-          subscription.subscriptionOfferDetails.length > 0
-        ) {
-          offerToken = subscription.subscriptionOfferDetails[0]?.offerToken;
+      if (Platform.OS === 'android' && product && typeof product === 'object' && 'subscriptionOfferDetails' in product) {
+        const details = (product as any).subscriptionOfferDetails;
+        if (Array.isArray(details) && details.length > 0) {
+          offerToken = details[0]?.offerToken;
         }
       }
 
-      // Request subscription with proper parameters
-      console.log('Requesting subscription with params:', {
-        sku: productId,
+      // Request purchase with proper parameters
+      console.log('Requesting purchase with params:', {
+        productId,
         offerToken,
       });
 
-      await requestSubscription({
-        sku: productId,
-        ...(offerToken && {
-          subscriptionOffers: [
-            {
-              sku: productId,
-              offerToken: offerToken,
-            },
-          ],
-        }),
-      });
+      // For iOS subscriptions, just pass the sku
+      if (Platform.OS === 'ios') {
+        await requestPurchase({ sku: productId });
+      } else {
+        // For Android, include offer token if available
+        await requestPurchase({
+          sku: productId,
+          ...(offerToken && {
+            subscriptionOffers: [
+              {
+                sku: productId,
+                offerToken: offerToken,
+              },
+            ],
+          }),
+        } as any);
+      }
 
       console.log('Purchase request sent successfully');
       // The purchase listener will handle the completion

@@ -52,11 +52,25 @@ export function SubscriptionPaywall() {
 
   const handlePurchase = async () => {
     try {
+      console.log('=== PURCHASE DEBUG START ===');
+      console.log('Selected Plan:', selectedPlan);
+      console.log('purchaseSubscription type:', typeof purchaseSubscription);
+      console.log('purchaseSubscription:', purchaseSubscription);
+
       await purchaseSubscription(selectedPlan);
+
+      console.log('=== PURCHASE DEBUG END ===');
     } catch (error) {
+      console.error('=== PURCHASE ERROR ===');
+      console.error('Error:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error message:', error instanceof Error ? error.message : String(error));
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
+      console.error('=== PURCHASE ERROR END ===');
+
       Alert.alert(
         'Purchase Failed',
-        error instanceof Error ? error.message : 'Failed to complete purchase'
+        `${error instanceof Error ? error.message : String(error)}\n\nCheck console for details`
       );
     }
   };
