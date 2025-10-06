@@ -209,16 +209,17 @@ export async function fetchUnifiedPollenData(lat: number, lon: number): Promise<
           
           if (pollenData) {
             let level: PollenData['level'] = 'Low';
-            if (pollenData.categoryValue >= 4) level = 'Very High';
-            else if (pollenData.categoryValue >= 3) level = 'High';
-            else if (pollenData.categoryValue >= 2) level = 'Moderate';
-            
+            if (pollenData.categoryValue >= 4) level = 'High';
+            else if (pollenData.categoryValue >= 3) level = 'Medium-High';
+            else if (pollenData.categoryValue >= 2) level = 'Medium';
+            else if (pollenData.categoryValue >= 1) level = 'Low-Medium';
+
             return {
-              level,
-              tree: pollenData.value,
-              grass: 0, // Microsoft doesn't separate types
+              overall: pollenData.value,
+              tree: pollenData.value, // Microsoft doesn't separate types, so use same value
+              grass: 0,
               weed: 0,
-              mold: 0,
+              level,
               timestamp: new Date().toISOString(),
             };
           }
