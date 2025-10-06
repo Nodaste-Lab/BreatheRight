@@ -266,29 +266,32 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
         }
       }
 
-      // Request purchase with proper parameters
+      // Request purchase with proper parameters for v14 API
       console.log('Requesting purchase with params:', {
         productId,
         offerToken,
       });
 
-      // For iOS subscriptions, just pass the sku
-      if (Platform.OS === 'ios') {
-        await requestPurchase({ sku: productId });
-      } else {
-        // For Android, include offer token if available
-        await requestPurchase({
-          sku: productId,
-          ...(offerToken && {
-            subscriptionOffers: [
-              {
-                sku: productId,
-                offerToken: offerToken,
-              },
-            ],
-          }),
-        } as any);
-      }
+      // v14 API requires request object with platform-specific config
+      await requestPurchase({
+        type: 'subs',
+        request: {
+          ios: {
+            sku: productId,
+          },
+          android: {
+            skus: [productId],
+            ...(offerToken && {
+              subscriptionOffers: [
+                {
+                  sku: productId,
+                  offerToken: offerToken,
+                },
+              ],
+            }),
+          },
+        },
+      });
 
       console.log('Purchase request sent successfully');
       // The purchase listener will handle the completion
