@@ -146,34 +146,35 @@ async function getCachedAlert(locationData: LocationData, alertType: AlertType):
 /**
  * Generate prompt for OpenAI based on location data and alert type
  */
-function generateAlertPrompt(locationData: LocationData, alertType: AlertType): string {
+function generateAlertPrompt(locationData: LocationData, alertType: AlertType, customAlertName?: string): string {
   const { location, aqi, pollen, lightning, wildfire } = locationData;
-  
+
   // Build context about current conditions
   const conditions = [];
   conditions.push(`Air Quality: ${aqi.aqi} (${aqi.level})`);
-  
+
   if (pollen) {
     conditions.push(`Pollen: ${pollen.level} (${pollen.overall})`);
   }
-  
+
   if (lightning) {
     conditions.push(`Storm risk: ${lightning.probability}% (${lightning.level})`);
   }
-  
+
   if (wildfire) {
     conditions.push(`Smoke: ${wildfire.smokeRisk.level}`);
   }
 
-  const timeContext = alertType === 'morning' 
-    ? 'starting your day' 
+  const alertName = customAlertName || (alertType === 'morning' ? 'Morning Report' : 'Evening Report');
+  const timeContext = alertType === 'morning'
+    ? 'starting your day'
     : 'wrapping up your day';
-    
+
   const focusArea = alertType === 'morning'
     ? 'outdoor planning and activities ahead'
     : 'reflection on today and preparation for tomorrow';
 
-  return `Generate a concise ${alertType} air quality alert for ${location.name} for someone ${timeContext}.
+  return `Generate a concise air quality alert titled "${alertName}" for ${location.name} for someone ${timeContext}.
 
 Current conditions:
 ${conditions.join('\n')}
@@ -183,11 +184,11 @@ Requirements:
 - Focus on ${focusArea}
 - Be actionable and helpful
 - Use friendly, encouraging tone
-- Include location name if space allows
+- Match the tone/theme of the alert name "${alertName}"
 
-${alertType === 'morning' ? 
-  'Morning focus: Help plan outdoor activities, commute, exercise' :
-  'Evening focus: Summarize the day, suggest tomorrow preparation'
+${alertType === 'morning' ?
+  'Focus: Help plan outdoor activities, commute, exercise' :
+  'Focus: Summarize the day, suggest tomorrow preparation'
 }
 
 Tone:
@@ -197,7 +198,8 @@ Tone:
 - Approachable
 - Encouraging
 
-Respond with just the alert message, no extra formatting.`;
+Respond with just the alert message, no extra formatting.
+Do not include quotes or punctuation around the message.`;
 }
 
 /**
@@ -265,7 +267,7 @@ async function callOpenAIForAlert(prompt: string, alertType: AlertType): Promise
 /**
  * Generate or retrieve cached alert message
  */
-export async function generateAlert(locationData: LocationData, alertType: AlertType): Promise<string> {
+export async function generateAlert(locationData: LocationData, alertType: AlertType, customAlertName?: string): Promise<string> {
   // Check cache first
   const cached = await getCachedAlert(locationData, alertType);
   if (cached) {
@@ -273,16 +275,17 @@ export async function generateAlert(locationData: LocationData, alertType: Alert
     return cached.message;
   }
 
-  console.log(`Generating new ${alertType} alert for location:`, locationData.location.name);
-  
+  const alertName = customAlertName || (alertType === 'morning' ? 'Morning Report' : 'Evening Report');
+  console.log(`Generating new "${alertName}" alert for location:`, locationData.location.name);
+
   // Generate new alert
-  const prompt = generateAlertPrompt(locationData, alertType);
+  const prompt = generateAlertPrompt(locationData, alertType, customAlertName);
   const message = await callOpenAIForAlert(prompt, alertType);
-  
+
   // Cache the result
   const cacheKey = generateAlertCacheKey(locationData, alertType);
   const keyString = createAlertCacheKeyString(cacheKey);
-  
+
   try {
     await supabase
       .from('ai_alerts')
@@ -297,28 +300,28 @@ export async function generateAlert(locationData: LocationData, alertType: Alert
         lightning_level: cacheKey.lightningLevel,
         cache_date: cacheKey.cacheDate
       });
-    
-    console.log(`Cached ${alertType} alert for future use`);
+
+    console.log(`Cached "${alertName}" alert for future use`);
   } catch (error) {
     console.error('Error caching alert:', error);
     // Don't fail if caching fails
   }
-  
+
   return message;
 }
 
 /**
  * Generate morning report alert
  */
-export async function generateMorningAlert(locationData: LocationData): Promise<string> {
-  return generateAlert(locationData, 'morning');
+export async function generateMorningAlert(locationData: LocationData, customAlertName?: string): Promise<string> {
+  return generateAlert(locationData, 'morning', customAlertName);
 }
 
 /**
  * Generate evening report alert
  */
-export async function generateEveningAlert(locationData: LocationData): Promise<string> {
-  return generateAlert(locationData, 'evening');
+export async function generateEveningAlert(locationData: LocationData, customAlertName?: string): Promise<string> {
+  return generateAlert(locationData, 'evening', customAlertName);
 }
 
 /**

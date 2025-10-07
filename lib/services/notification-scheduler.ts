@@ -87,6 +87,11 @@ export async function scheduleMorningReport(locationId: string, time: string): P
     // Parse time (HH:MM format)
     const [hours, minutes] = time.split(':').map(Number);
 
+    // Get alert preferences for custom name
+    const { preferences } = useAlertStore.getState();
+    const alertPrefs = preferences.find(p => p.locationId === locationId);
+    const customName = alertPrefs?.morningReportName || 'Morning Report';
+
     // Generate the alert content immediately
     const { getCurrentLocationData } = useLocationStore.getState();
     await getCurrentLocationData(locationId);
@@ -99,8 +104,8 @@ export async function scheduleMorningReport(locationId: string, time: string): P
       return null;
     }
 
-    // Generate AI alert now
-    const alertMessage = await generateMorningAlert(currentLocation);
+    // Generate AI alert now with custom name
+    const alertMessage = await generateMorningAlert(currentLocation, customName);
 
     // Schedule daily at specified time with pre-generated content
     const trigger: Notifications.DailyTriggerInput = {
@@ -111,7 +116,7 @@ export async function scheduleMorningReport(locationId: string, time: string): P
 
     const notificationId = await Notifications.scheduleNotificationAsync({
       content: {
-        title: `🌅 ${currentLocation.location.name}`,
+        title: `🌅 ${customName} - ${currentLocation.location.name}`,
         body: alertMessage,
         data: {
           type: 'morning-report',
@@ -142,6 +147,11 @@ export async function scheduleEveningReport(locationId: string, time: string): P
     // Parse time (HH:MM format)
     const [hours, minutes] = time.split(':').map(Number);
 
+    // Get alert preferences for custom name
+    const { preferences } = useAlertStore.getState();
+    const alertPrefs = preferences.find(p => p.locationId === locationId);
+    const customName = alertPrefs?.eveningReportName || 'Evening Report';
+
     // Generate the alert content immediately
     const { getCurrentLocationData } = useLocationStore.getState();
     await getCurrentLocationData(locationId);
@@ -154,8 +164,8 @@ export async function scheduleEveningReport(locationId: string, time: string): P
       return null;
     }
 
-    // Generate AI alert now
-    const alertMessage = await generateEveningAlert(currentLocation);
+    // Generate AI alert now with custom name
+    const alertMessage = await generateEveningAlert(currentLocation, customName);
 
     // Schedule daily at specified time with pre-generated content
     const trigger: Notifications.DailyTriggerInput = {
@@ -166,7 +176,7 @@ export async function scheduleEveningReport(locationId: string, time: string): P
 
     const notificationId = await Notifications.scheduleNotificationAsync({
       content: {
-        title: `🌙 ${currentLocation.location.name}`,
+        title: `🌙 ${customName} - ${currentLocation.location.name}`,
         body: alertMessage,
         data: {
           type: 'evening-report',
@@ -318,20 +328,30 @@ export async function getScheduledNotifications(): Promise<Notifications.Notific
 /**
  * Send immediate test notification
  */
-export async function sendTestNotification(type: 'morning' | 'evening', locationName: string): Promise<void> {
+export async function sendTestNotification(type: 'morning' | 'evening', locationName: string, locationId?: string): Promise<void> {
   try {
     const hasPermission = await requestNotificationPermissions();
     if (!hasPermission) return;
 
+    // Get custom alert name if locationId provided
+    let customName = type === 'morning' ? 'Morning Report' : 'Evening Report';
+    if (locationId) {
+      const { preferences } = useAlertStore.getState();
+      const alertPrefs = preferences.find(p => p.locationId === locationId);
+      customName = type === 'morning'
+        ? (alertPrefs?.morningReportName || 'Morning Report')
+        : (alertPrefs?.eveningReportName || 'Evening Report');
+    }
+
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: type === 'morning' 
-          ? `🌅 Test Morning Report - ${locationName}`
-          : `🌙 Test Evening Report - ${locationName}`,
+        title: type === 'morning'
+          ? `🌅 Test ${customName} - ${locationName}`
+          : `🌙 Test ${customName} - ${locationName}`,
         body: type === 'morning'
           ? 'Good morning! This is a test of your morning air quality report. ☀️'
           : 'Good evening! This is a test of your evening air quality summary. 🌙',
-        data: { 
+        data: {
           type: `${type}-report-test`,
           test: true 
         },

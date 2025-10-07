@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { Location } from '../../types/location';
 import { useLocationStore } from '../../store/location';
 import { Card } from '../ui/Card';
+import { EditLocationModal } from './EditLocationModal';
 
 interface LocationCardProps {
   location: Location;
@@ -13,6 +14,7 @@ interface LocationCardProps {
 
 export function LocationCard({ location, onPress, onDelete }: LocationCardProps) {
   const { setLocationAsPrimary, deleteLocation, loading } = useLocationStore();
+  const [editModalVisible, setEditModalVisible] = useState(false);
 
   const handleSetPrimary = async () => {
     try {
@@ -48,54 +50,70 @@ export function LocationCard({ location, onPress, onDelete }: LocationCardProps)
   const cardStyle = location.show_in_home ? styles.primaryCard : undefined;
 
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={loading}
-    >
-      <Card variant="compact" style={cardStyle}>
-        <View style={styles.cardContent}>
-        <View style={styles.locationInfo}>
-          <View style={styles.nameRow}>
-            <Text style={styles.locationName}>
-              {location.name}
+    <>
+      <TouchableOpacity
+        onPress={onPress}
+        disabled={loading}
+      >
+        <Card variant="compact" style={cardStyle}>
+          <View style={styles.cardContent}>
+          <View style={styles.locationInfo}>
+            <View style={styles.nameRow}>
+              <Text style={styles.locationName}>
+                {location.name}
+              </Text>
+              {location.show_in_home && (
+                <View style={styles.primaryBadge}>
+                  <Text style={styles.primaryBadgeText}>PRIMARY</Text>
+                </View>
+              )}
+            </View>
+            <Text style={styles.address}>
+              {location.address}
             </Text>
-            {location.show_in_home && (
-              <View style={styles.primaryBadge}>
-                <Text style={styles.primaryBadgeText}>PRIMARY</Text>
-              </View>
-            )}
+            <Text style={styles.coordinates}>
+              {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
+            </Text>
           </View>
-          <Text style={styles.address}>
-            {location.address}
-          </Text>
-          <Text style={styles.coordinates}>
-            {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
-          </Text>
-        </View>
 
-        <View style={styles.actionButtons}>
-          {!location.show_in_home && (
+          <View style={styles.actionButtons}>
+            {!location.show_in_home && (
+              <TouchableOpacity
+                onPress={handleSetPrimary}
+                disabled={loading}
+                style={styles.actionButton}
+                testID="star-button"
+              >
+                <Ionicons name="star-outline" size={20} color="#6B7280" />
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
-              onPress={handleSetPrimary}
+              onPress={() => setEditModalVisible(true)}
               disabled={loading}
               style={styles.actionButton}
-              testID="star-button"
+              testID="edit-button"
             >
-              <Ionicons name="star-outline" size={20} color="#6B7280" />
+              <Ionicons name="pencil-outline" size={20} color="#3B82F6" />
             </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            onPress={handleDelete}
-            disabled={loading}
-            style={styles.actionButton}
-            testID="delete-button"
-          >
-            <Ionicons name="trash-outline" size={20} color="#EF4444" />
-          </TouchableOpacity>
-        </View>
-        </View>
-      </Card>
-    </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleDelete}
+              disabled={loading}
+              style={styles.actionButton}
+              testID="delete-button"
+            >
+              <Ionicons name="trash-outline" size={20} color="#EF4444" />
+            </TouchableOpacity>
+          </View>
+          </View>
+        </Card>
+      </TouchableOpacity>
+
+      <EditLocationModal
+        visible={editModalVisible}
+        location={location}
+        onClose={() => setEditModalVisible(false)}
+      />
+    </>
   );
 }
 

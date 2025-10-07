@@ -9,6 +9,7 @@ export interface Location {
   show_in_home: boolean;
   notify_daily: boolean;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface AQIData {

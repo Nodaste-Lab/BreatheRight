@@ -7,8 +7,10 @@ export interface AlertPreferences {
   locationId: string;
   morningReportEnabled: boolean;
   morningReportTime: string; // HH:MM format
+  morningReportName: string; // Custom name for morning report
   eveningReportEnabled: boolean;
   eveningReportTime: string; // HH:MM format
+  eveningReportName: string; // Custom name for evening report
   aqiThresholdEnabled: boolean;
   aqiThreshold: number;
   pollenAlertEnabled: boolean;
@@ -72,8 +74,10 @@ export const useAlertStore = create<AlertStore>((set, get) => ({
         locationId: pref.location_id,
         morningReportEnabled: pref.morning_report_enabled,
         morningReportTime: pref.morning_report_time,
+        morningReportName: pref.morning_report_name || 'Morning Report',
         eveningReportEnabled: pref.evening_report_enabled,
         eveningReportTime: pref.evening_report_time,
+        eveningReportName: pref.evening_report_name || 'Evening Report',
         aqiThresholdEnabled: pref.aqi_threshold_enabled,
         aqiThreshold: pref.aqi_threshold,
         pollenAlertEnabled: pref.pollen_alert_enabled,
@@ -99,8 +103,10 @@ export const useAlertStore = create<AlertStore>((set, get) => ({
       const dbUpdates: any = {};
       if (updates.morningReportEnabled !== undefined) dbUpdates.morning_report_enabled = updates.morningReportEnabled;
       if (updates.morningReportTime !== undefined) dbUpdates.morning_report_time = updates.morningReportTime;
+      if (updates.morningReportName !== undefined) dbUpdates.morning_report_name = updates.morningReportName;
       if (updates.eveningReportEnabled !== undefined) dbUpdates.evening_report_enabled = updates.eveningReportEnabled;
       if (updates.eveningReportTime !== undefined) dbUpdates.evening_report_time = updates.eveningReportTime;
+      if (updates.eveningReportName !== undefined) dbUpdates.evening_report_name = updates.eveningReportName;
       if (updates.aqiThresholdEnabled !== undefined) dbUpdates.aqi_threshold_enabled = updates.aqiThresholdEnabled;
       if (updates.aqiThreshold !== undefined) dbUpdates.aqi_threshold = updates.aqiThreshold;
       if (updates.pollenAlertEnabled !== undefined) dbUpdates.pollen_alert_enabled = updates.pollenAlertEnabled;
@@ -139,8 +145,10 @@ export const useAlertStore = create<AlertStore>((set, get) => ({
           locationId,
           morningReportEnabled: false,
           morningReportTime: '08:00',
+          morningReportName: 'Morning Report',
           eveningReportEnabled: false,
           eveningReportTime: '18:00',
+          eveningReportName: 'Evening Report',
           aqiThresholdEnabled: false,
           aqiThreshold: 100,
           pollenAlertEnabled: false,

@@ -4,20 +4,21 @@ import { Ionicons } from '@expo/vector-icons';
 import { fonts } from '../../lib/fonts';
 import type { LocationData } from '../../types/location';
 import { getAQIColorByValue, getAQITextColorByValue } from '../../lib/colors/aqi-colors';
-import { 
-  getPollenColor, 
+import {
+  getPollenColor,
   getPollenTextColor,
-  getLightningColor, 
+  getLightningColor,
   getLightningTextColor,
   getWildfireColor,
   getWildfireTextColor,
-  UNAVAILABLE_COLOR 
+  UNAVAILABLE_COLOR
 } from '../../lib/colors/environmental-colors';
 import { Card } from '../ui/Card';
 import { colors } from '../../lib/colors/theme';
 import { SevereWeatherAlertCard } from '../alerts/SevereWeatherAlert';
 import { generateLocationSummary } from '../../lib/services/openai-summary';
 import { assessOverallConditions } from '../../lib/utils/condition-assessment';
+import { EditLocationModal } from './EditLocationModal';
 
 interface LocationFeedCardProps {
   data: LocationData;
@@ -27,6 +28,7 @@ interface LocationFeedCardProps {
 
 export function LocationFeedCard({ data, onPress, onRemove }: LocationFeedCardProps) {
   const { location, aqi, pollen, lightning, wildfire, weather, microsoft } = data;
+  const [editModalVisible, setEditModalVisible] = useState(false);
   
   // AI-generated summary state
   const [aiSummary, setAiSummary] = useState<{ headline: string; description: string } | null>(null);
@@ -111,8 +113,9 @@ export function LocationFeedCard({ data, onPress, onRemove }: LocationFeedCardPr
   };
 
   return (
-    <TouchableOpacity 
-      onPress={onPress} 
+    <>
+    <TouchableOpacity
+      onPress={onPress}
       activeOpacity={0.7}
       testID="location-card-touchable"
     >
@@ -277,12 +280,18 @@ export function LocationFeedCard({ data, onPress, onRemove }: LocationFeedCardPr
       )}
 
       <View style={styles.footer}>
-        {onRemove && (
-          <TouchableOpacity style={styles.removeButton} onPress={onRemove}>
-            <Ionicons name="trash-outline" size={16} color="#ef4444" />
-            <Text style={styles.removeText}>Remove</Text>
+        <View style={styles.actionButtons}>
+          <TouchableOpacity style={styles.actionButton} onPress={() => setEditModalVisible(true)}>
+            <Ionicons name="pencil-outline" size={16} color="#3B82F6" />
+            <Text style={styles.editText}>Edit</Text>
           </TouchableOpacity>
-        )}
+          {onRemove && (
+            <TouchableOpacity style={styles.actionButton} onPress={onRemove}>
+              <Ionicons name="trash-outline" size={16} color="#ef4444" />
+              <Text style={styles.removeText}>Remove</Text>
+            </TouchableOpacity>
+          )}
+        </View>
         <View style={styles.updateInfo}>
           <Ionicons name="time-outline" size={14} color={colors.text.secondary} />
           <Text style={styles.updateText}>Last update {formatUpdateTime()}</Text>
@@ -290,6 +299,13 @@ export function LocationFeedCard({ data, onPress, onRemove }: LocationFeedCardPr
       </View>
       </Card>
     </TouchableOpacity>
+
+    <EditLocationModal
+      visible={editModalVisible}
+      location={location}
+      onClose={() => setEditModalVisible(false)}
+    />
+    </>
   );
 }
 
@@ -416,11 +432,21 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  removeButton: {
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 4,
     paddingHorizontal: 8,
+  },
+  editText: {
+    ...fonts.body.small,
+    color: '#3B82F6',
+    marginLeft: 4,
   },
   removeText: {
     ...fonts.body.small,

@@ -13,6 +13,7 @@ interface LocationState {
 interface LocationActions {
   fetchUserLocations: () => Promise<void>;
   createLocation: (name: string, latitude: number, longitude: number, address: string) => Promise<Location>;
+  updateLocation: (id: string, name: string, address: string) => Promise<void>;
   deleteLocation: (id: string) => Promise<void>;
   setLocationAsPrimary: (id: string) => Promise<void>;
   getCurrentLocationData: (locationId: string) => Promise<void>;
@@ -116,10 +117,43 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
     }
   },
 
+  updateLocation: async (id: string, name: string, address: string) => {
+    try {
+      set({ loading: true, error: null });
+
+      console.log('Updating location:', { id, name, address });
+
+      const { data, error } = await supabase
+        .from('locations')
+        .update({ name, address })
+        .eq('id', id)
+        .select();
+
+      console.log('Update result:', { data, error });
+
+      if (error) {
+        console.error('Update error:', error);
+        throw error;
+      }
+
+      // Refresh the locations list
+      await get().fetchUserLocations();
+
+      set({ loading: false });
+    } catch (error) {
+      console.error('updateLocation caught error:', error);
+      set({
+        error: error instanceof Error ? error.message : 'Failed to update location',
+        loading: false
+      });
+      throw error;
+    }
+  },
+
   deleteLocation: async (id: string) => {
     try {
       set({ loading: true, error: null });
-      
+
       const { error } = await supabase
         .from('locations')
         .delete()
@@ -129,12 +163,12 @@ export const useLocationStore = create<LocationStore>((set, get) => ({
 
       // Refresh the locations list
       await get().fetchUserLocations();
-      
+
       set({ loading: false });
     } catch (error) {
-      set({ 
+      set({
         error: error instanceof Error ? error.message : 'Failed to delete location',
-        loading: false 
+        loading: false
       });
     }
   },

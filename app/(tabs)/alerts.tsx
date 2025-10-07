@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Switch, TouchableOpacity, Platform, Modal } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Switch, TouchableOpacity, Platform, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../../components/ui/Card';
 import { fonts } from '../../lib/fonts';
@@ -14,6 +14,7 @@ export default function AlertsScreen() {
   const { preferences, fetchAlertPreferences, updateLocationAlerts, createDefaultPreferences } = useAlertStore();
   const [expandedLocation, setExpandedLocation] = useState<string | null>(null);
   const [showTimePicker, setShowTimePicker] = useState<{ locationId: string; type: 'morning' | 'evening' } | null>(null);
+  const [editingName, setEditingName] = useState<{ locationId: string; type: 'morning' | 'evening'; name: string } | null>(null);
 
   // Initialize temp time for picker
   const getCurrentTime = (locationId: string, type: 'morning' | 'evening') => {
@@ -103,6 +104,36 @@ export default function AlertsScreen() {
     }
   };
 
+  // Update alert name for a location
+  const updateAlertName = async (locationId: string, type: 'morning' | 'evening', name: string) => {
+    try {
+      const field = type === 'morning' ? 'morningReportName' : 'eveningReportName';
+      const existing = getLocationPreferences(locationId);
+
+      if (!existing) {
+        const defaultPreferences = {
+          morningReportEnabled: false,
+          eveningReportEnabled: false,
+          aqiThresholdEnabled: false,
+          pollenAlertEnabled: false,
+          stormAlertEnabled: false,
+          morningReportTime: '08:00',
+          eveningReportTime: '18:00',
+          morningReportName: 'Morning Report',
+          eveningReportName: 'Evening Report',
+          aqiThreshold: 100,
+          [field]: name,
+        };
+        await updateLocationAlerts(locationId, defaultPreferences);
+      } else {
+        await updateLocationAlerts(locationId, { [field]: name });
+      }
+      setEditingName(null);
+    } catch (error) {
+      console.error('Failed to update alert name:', error);
+    }
+  };
+
   return (
     <GradientBackground>
       <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
@@ -143,7 +174,18 @@ export default function AlertsScreen() {
                         <View style={styles.alertItemLeft}>
                           <Ionicons name="sunny-outline" size={20} color="#f59e0b" />
                           <View style={styles.alertText}>
-                            <Text style={styles.alertName}>Morning Report</Text>
+                            <TouchableOpacity
+                              onPress={() => setEditingName({
+                                locationId: location.id,
+                                type: 'morning',
+                                name: prefs?.morningReportName || 'Morning Report'
+                              })}
+                            >
+                              <View style={styles.editableNameContainer}>
+                                <Text style={styles.alertName}>{prefs?.morningReportName || 'Morning Report'}</Text>
+                                <Ionicons name="pencil-outline" size={14} color="#6b7280" style={styles.editIcon} />
+                              </View>
+                            </TouchableOpacity>
                             <TouchableOpacity
                               onPress={() => {
                                 const time = getCurrentTime(location.id, 'morning');
@@ -172,7 +214,18 @@ export default function AlertsScreen() {
                         <View style={styles.alertItemLeft}>
                           <Ionicons name="moon-outline" size={20} color="#6366f1" />
                           <View style={styles.alertText}>
-                            <Text style={styles.alertName}>Evening Report</Text>
+                            <TouchableOpacity
+                              onPress={() => setEditingName({
+                                locationId: location.id,
+                                type: 'evening',
+                                name: prefs?.eveningReportName || 'Evening Report'
+                              })}
+                            >
+                              <View style={styles.editableNameContainer}>
+                                <Text style={styles.alertName}>{prefs?.eveningReportName || 'Evening Report'}</Text>
+                                <Ionicons name="pencil-outline" size={14} color="#6b7280" style={styles.editIcon} />
+                              </View>
+                            </TouchableOpacity>
                             <TouchableOpacity
                               onPress={() => {
                                 const time = getCurrentTime(location.id, 'evening');
@@ -308,6 +361,45 @@ export default function AlertsScreen() {
                       <Text style={styles.timeButtonText}>+1h</Text>
                     </TouchableOpacity>
                   </View>
+                </View>
+              </View>
+            </View>
+          </Modal>
+        )}
+
+        {/* Edit Alert Name Modal */}
+        {editingName && (
+          <Modal
+            transparent
+            visible={!!editingName}
+            animationType="fade"
+            onRequestClose={() => setEditingName(null)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.editNameModal}>
+                <Text style={styles.editNameTitle}>Edit Alert Name</Text>
+                <TextInput
+                  style={styles.nameInput}
+                  value={editingName.name}
+                  onChangeText={(text) => setEditingName({ ...editingName, name: text })}
+                  placeholder={editingName.type === 'morning' ? 'Morning Report' : 'Evening Report'}
+                  placeholderTextColor="#9ca3af"
+                  autoFocus
+                  maxLength={50}
+                />
+                <View style={styles.editNameButtons}>
+                  <TouchableOpacity
+                    style={[styles.editNameButton, styles.cancelButton]}
+                    onPress={() => setEditingName(null)}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.editNameButton, styles.saveButton]}
+                    onPress={() => updateAlertName(editingName.locationId, editingName.type, editingName.name)}
+                  >
+                    <Text style={styles.saveButtonText}>Save</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -494,5 +586,62 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     lineHeight: 20,
+  },
+  editableNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  editIcon: {
+    marginLeft: 4,
+  },
+  editNameModal: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 24,
+    width: '85%',
+    maxWidth: 400,
+  },
+  editNameTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 16,
+  },
+  nameInput: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: '#111827',
+    marginBottom: 20,
+  },
+  editNameButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  editNameButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#f3f4f6',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  saveButton: {
+    backgroundColor: '#3b82f6',
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
   },
 });
