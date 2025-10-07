@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.benogren.breatheright",
-      "buildNumber": "6",
+      "buildNumber": "7",
       "config": {
         "usesNonExemptEncryption": false
       },

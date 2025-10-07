@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase/client';
 import type { AuthStore, Profile } from '../types/auth';
+import { useSubscriptionStore } from './subscription';
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
@@ -193,13 +194,22 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   signOut: async () => {
     set({ loading: true });
-    
+
     const { error } = await supabase.auth.signOut();
-    
+
     if (error) {
       set({ loading: false });
       throw error;
     }
+
+    // Reset subscription store on sign out
+    useSubscriptionStore.setState({
+      hasActiveSubscription: false,
+      hasPremiumAccess: false,
+      currentSubscription: null,
+      purchases: [],
+      error: null,
+    });
 
     set({
       user: null,

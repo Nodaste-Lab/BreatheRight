@@ -213,7 +213,11 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       // If no database subscription, check device purchases (fallback)
       // This handles cases where user hasn't validated yet
       const availablePurchases = await getAvailablePurchases();
-      console.log('Available device purchases:', availablePurchases);
+      console.log('=== AVAILABLE PURCHASES DEBUG ===');
+      console.log('Count:', availablePurchases.length);
+      console.log('Full data:', JSON.stringify(availablePurchases, null, 2));
+      console.log('Transaction IDs:', availablePurchases.map(p => p.transactionId || (p as any).id));
+      console.log('================================');
 
       // Filter for our subscription products
       const subscriptionPurchases = availablePurchases.filter((purchase) =>

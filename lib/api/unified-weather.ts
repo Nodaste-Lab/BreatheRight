@@ -215,8 +215,8 @@ export async function fetchUnifiedPollenData(lat: number, lon: number): Promise<
             else if (pollenData.categoryValue >= 1) level = 'Low-Medium';
 
             return {
-              overall: pollenData.value,
-              tree: pollenData.value, // Microsoft doesn't separate types, so use same value
+              overall: pollenData.categoryValue,
+              tree: pollenData.categoryValue, // Microsoft doesn't separate types, so use same value
               grass: 0,
               weed: 0,
               level,
