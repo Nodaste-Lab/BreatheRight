@@ -81,6 +81,9 @@ export async function validateReceiptWithBackend(
   receipt: string | undefined,
   purchase: Purchase
 ): Promise<boolean> {
+  console.log('=== validateReceiptWithBackend START ===');
+  console.log('Receipt provided?', !!receipt);
+
   if (!receipt) {
     console.error('No receipt provided for validation');
     return false;
@@ -88,27 +91,45 @@ export async function validateReceiptWithBackend(
 
   try {
     // Get the current session
+    console.log('Getting session...');
     const {
       data: { session },
     } = await supabase.auth.getSession();
 
+    console.log('Session exists?', !!session);
+    console.log('User ID:', session?.user?.id);
+
     if (!session) {
       console.error('No active session for validation');
-      // For development, allow purchases without session
-      // TODO: Change to `return false;` for production
-      return true;
+      console.error('ERROR: User must be logged in to purchase subscriptions');
+      // For production: require authentication for purchases
+      return false;
     }
 
     // Get Supabase URL from environment
     const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+    console.log('Supabase URL:', supabaseUrl);
+
     if (!supabaseUrl) {
       console.error('EXPO_PUBLIC_SUPABASE_URL not configured');
-      // TODO: Change to `return false;` for production
-      return true;
+      console.error('ERROR: Cannot validate subscription without Supabase URL');
+      return false;
     }
 
     // Call the Edge Function to validate receipt
-    const response = await fetch(`${supabaseUrl}/functions/v1/validate-subscription`, {
+    const edgeFunctionUrl = `${supabaseUrl}/functions/v1/validate-subscription`;
+    console.log('Calling edge function:', edgeFunctionUrl);
+    // In v14, transactionId is in the `id` field
+    const transactionId = purchase.transactionId || (purchase as any).id;
+
+    console.log('Request body:', {
+      platform: Platform.OS,
+      productId: purchase.productId,
+      transactionId,
+      receiptLength: receipt.length,
+    });
+
+    const response = await fetch(edgeFunctionUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -118,19 +139,23 @@ export async function validateReceiptWithBackend(
         receipt,
         platform: Platform.OS,
         productId: purchase.productId,
-        transactionId: purchase.transactionId,
+        transactionId,
         purchaseToken: (purchase as any).purchaseToken,
       }),
     });
 
+    console.log('Edge function response status:', response.status);
+    console.log('Edge function response ok?', response.ok);
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Receipt validation failed:', response.status, errorText);
-      // TODO: Change to `return false;` for production
-      return true;
+      console.error('ERROR: Edge function returned error');
+      return false;
     }
 
     const data: ValidationResponse = await response.json();
+    console.log('Edge function response data:', data);
 
     // Check if subscription is valid and active
     if (data.isValid && data.isActive) {

@@ -21,20 +21,36 @@ export default function IndexScreen() {
   }, []);
 
   useEffect(() => {
-    if (!initialized || !subscriptionInitialized) return;
+    console.log('=== INDEX ROUTING LOGIC ===');
+    console.log('initialized:', initialized);
+    console.log('subscriptionInitialized:', subscriptionInitialized);
+    console.log('user:', user ? 'exists' : 'null');
+    console.log('hasActiveSubscription:', hasActiveSubscription);
 
-    // Check if user has an active subscription
+    if (!initialized || !subscriptionInitialized) {
+      console.log('Waiting for initialization...');
+      return;
+    }
+
+    // First check if user is logged in
+    if (!user) {
+      // Not logged in - go to sign in
+      console.log('No user - navigating to sign-in');
+      router.replace('/(auth)/sign-in');
+      return;
+    }
+
+    // User is logged in - check subscription status
     if (!hasActiveSubscription) {
+      // Logged in but no subscription - show paywall
+      console.log('User logged in but no subscription - showing paywall');
       setShowPaywall(true);
       return;
     }
 
-    // If subscription is active, proceed with normal auth flow
-    if (user) {
-      router.replace('/(tabs)');
-    } else {
-      router.replace('/(auth)/sign-in');
-    }
+    // Logged in with active subscription - go to app
+    console.log('User has subscription - navigating to tabs');
+    router.replace('/(tabs)');
   }, [user, initialized, hasActiveSubscription, subscriptionInitialized]);
 
   // Show paywall if subscription is not active

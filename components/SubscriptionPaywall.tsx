@@ -7,10 +7,13 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Linking,
+  Image,
 } from 'react-native';
 import { useSubscriptionStore, SUBSCRIPTION_PRODUCTS } from '../store/subscription';
 import { Button } from './ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
+import { GradientBackground } from './ui/GradientBackground';
 import { colors } from '../lib/constants/colors';
 import { fonts } from '../lib/fonts';
 
@@ -87,27 +90,43 @@ export function SubscriptionPaywall() {
     }
   };
 
-  return (
-    <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
-          <Text style={styles.title}>Subscribe to AQ Buddy</Text>
-          <Text style={styles.subtitle}>
-            Get unlimited access to real-time air quality monitoring and health recommendations
-          </Text>
-        </View>
+  const openPrivacyPolicy = () => {
+    Linking.openURL('https://www.nodaste.com/aqbuddy/privacy-policy');
+  };
 
-        <View style={styles.features}>
-          <FeatureItem text="Real-time air quality monitoring" />
-          <FeatureItem text="Personalized health recommendations" />
-          <FeatureItem text="Location-based alerts" />
-          <FeatureItem text="7-day air quality forecast" />
-          <FeatureItem text="Historical data tracking" />
-        </View>
+  const openTerms = () => {
+    Linking.openURL('https://www.nodaste.com/aqbuddy/terms-of-service');
+  };
+
+  return (
+    <GradientBackground>
+      <View style={styles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <Text style={styles.title}>Try AQBuddy for Free!</Text>
+            <Text style={styles.subtitle}>
+              Get unlimited access to real-time air quality (AQI), pollen, weather, and pollution alerts tailored to your health needs and daily routine.
+            </Text>
+
+            <View style={styles.lungsContainer}>
+              <Image
+                source={require('../assets/kawaii/lungs-good.png')}
+                style={styles.lungsImage}
+                resizeMode="contain"
+              />
+              <View style={styles.featuresBox}>
+                <FeatureItem text="Real-time AQI, pollen, and weather alerts" />
+                <FeatureItem text="Track multiple locations like home, school, or work" />
+                <FeatureItem text="Health-based tips and alerts customized to your needs" />
+                <FeatureItem text="Friendly kawaii characters make complex data simple and fun" />
+                <FeatureItem text="Simple, uncluttered user interface" />
+              </View>
+            </View>
+          </View>
 
         <View style={styles.plans}>
           {SUBSCRIPTION_OPTIONS.map((option) => (
@@ -151,7 +170,7 @@ export function SubscriptionPaywall() {
 
         <View style={styles.actions}>
           <Button
-            title={loading ? 'Processing...' : 'Subscribe Now'}
+            title={loading ? 'Processing...' : 'Start 7-Day Free Trial'}
             variant="primary"
             size="lg"
             fullWidth
@@ -169,13 +188,28 @@ export function SubscriptionPaywall() {
         </View>
 
         <View style={styles.footer}>
+          <Text style={styles.footerTagline}>
+            Stay ahead of pollution, protect your loved ones, and enjoy the outdoors—safely.
+          </Text>
+
           <Text style={styles.footerText}>
             Subscriptions will automatically renew unless cancelled at least 24 hours before the end
             of the current period.
           </Text>
+
+          <View style={styles.legalLinks}>
+            <TouchableOpacity onPress={openPrivacyPolicy}>
+              <Text style={styles.legalLinkText}>Privacy Policy</Text>
+            </TouchableOpacity>
+            <Text style={styles.legalSeparator}>•</Text>
+            <TouchableOpacity onPress={openTerms}>
+              <Text style={styles.legalLinkText}>Terms of Service</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
-    </View>
+      </View>
+    </GradientBackground>
   );
 }
 
@@ -193,7 +227,7 @@ function FeatureItem({ text }: { text: string }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.neutral.white,
+    paddingTop: 66,
   },
   scrollView: {
     flex: 1,
@@ -202,72 +236,106 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   header: {
-    marginBottom: 32,
+    marginBottom: 24,
     alignItems: 'center',
   },
   title: {
     fontSize: 32,
     fontFamily: fonts.weight.bold,
-    color: colors.text.primary,
+    color: '#491124',
     marginBottom: 12,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
     fontFamily: fonts.weight.regular,
-    color: colors.text.secondary,
+    color: '#374151',
     textAlign: 'center',
     lineHeight: 24,
+    marginBottom: 2,
+    paddingHorizontal: 8,
+  },
+  lungsContainer: {
+    width: '100%',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  lungsImage: {
+    width: 200,
+    height: 200,
+    zIndex: 10,
+    marginBottom: -60,
+  },
+  featuresBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    width: '100%',
+    borderWidth: 2,
+    borderColor: '#B8DCE8',
   },
   features: {
     marginBottom: 32,
   },
   featureItem: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
+    alignItems: 'flex-start',
+    marginBottom: 12,
   },
   checkmark: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.primary,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#491124',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    marginTop: 2,
   },
   checkmarkText: {
     color: colors.neutral.white,
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: fonts.weight.bold,
   },
   featureText: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: fonts.weight.regular,
-    color: colors.text.primary,
+    color: '#1F2937',
     flex: 1,
+    lineHeight: 22,
   },
   plans: {
     marginBottom: 24,
   },
   planCard: {
-    backgroundColor: colors.neutral.white,
+    backgroundColor: '#FFFFFF',
     borderWidth: 2,
-    borderColor: colors.neutral.gray300,
+    borderColor: '#E5E7EB',
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
     position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   planCardSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.neutral.whiteAlpha65,
+    borderColor: '#491124',
+    backgroundColor: '#FFF5F7',
+    borderWidth: 3,
   },
   savingsBadge: {
     position: 'absolute',
     top: -10,
     right: 20,
-    backgroundColor: colors.semantic.success,
+    backgroundColor: '#10B981',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
@@ -287,7 +355,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: colors.primary,
+    borderColor: '#491124',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -296,7 +364,7 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: colors.primary,
+    backgroundColor: '#491124',
   },
   planName: {
     fontSize: 20,
@@ -325,10 +393,12 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   errorContainer: {
-    backgroundColor: colors.semantic.error + '20',
+    backgroundColor: '#FEE2E2',
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
   },
   errorText: {
     color: colors.semantic.error,
@@ -347,12 +417,23 @@ const styles = StyleSheet.create({
   restoreText: {
     fontSize: 16,
     fontFamily: fonts.weight.semibold,
-    color: colors.primary,
+    color: '#491124',
   },
   footer: {
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: colors.neutral.gray300,
+    paddingTop: 20,
+    paddingBottom: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+  },
+  footerTagline: {
+    fontSize: 14,
+    fontFamily: fonts.weight.semibold,
+    color: colors.text.primary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 12,
   },
   footerText: {
     fontSize: 12,
@@ -360,5 +441,22 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  legalLinkText: {
+    fontSize: 12,
+    fontFamily: fonts.weight.regular,
+    color: '#491124',
+    textDecorationLine: 'underline',
+  },
+  legalSeparator: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    marginHorizontal: 8,
   },
 });

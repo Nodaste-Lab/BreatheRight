@@ -23,9 +23,23 @@ export const SUBSCRIPTION_PRODUCTS = {
 
 const productIds = Object.values(SUBSCRIPTION_PRODUCTS);
 
+interface Subscription {
+  id: string;
+  user_id: string;
+  product_id: string;
+  transaction_id: string;
+  expires_at: string;
+  is_active: boolean;
+  auto_renewing: boolean;
+  platform: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface SubscriptionState {
   hasActiveSubscription: boolean;
   hasPremiumAccess: boolean;
+  currentSubscription: Subscription | null;
   purchases: Purchase[];
   loading: boolean;
   initialized: boolean;
@@ -43,6 +57,7 @@ interface SubscriptionState {
 export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   hasActiveSubscription: false,
   hasPremiumAccess: false,
+  currentSubscription: null,
   purchases: [],
   loading: false,
   initialized: false,
@@ -58,29 +73,53 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       // Set up purchase listeners
       const purchaseUpdateSubscription = purchaseUpdatedListener(
         async (purchase: Purchase) => {
-          console.log('Purchase updated:', purchase);
+          console.log('=== PURCHASE UPDATED ===');
+          console.log('Purchase object:', JSON.stringify(purchase, null, 2));
+          console.log('Purchase keys:', Object.keys(purchase));
+          console.log('Platform:', Platform.OS);
 
           try {
-            // Validate receipt with your backend before finishing transaction
-            // For iOS, the receipt is in transactionReceipt (base64 encoded)
-            // For Android, use purchaseToken
-            const receipt = Platform.OS === 'ios'
-              ? (purchase as any).transactionReceipt // iOS receipt
-              : (purchase as any).purchaseToken; // Android purchase token
+            // Set loading false since purchase completed
+            set({ loading: false });
 
-            const isValid = await validateReceiptWithBackend(receipt, purchase);
-            if (!isValid) {
-              console.error('Receipt validation failed');
+            // Validate receipt with your backend before finishing transaction
+            // In v14, the receipt is always in purchaseToken for both iOS and Android
+            // For iOS, it's a JWT token, for Android it's the purchase token
+            const receipt = purchase.purchaseToken;
+
+            console.log('Receipt exists?', !!receipt);
+            console.log('Receipt (first 50 chars):', receipt ? receipt.substring(0, 50) + '...' : 'null');
+
+            if (!receipt) {
+              console.error('No receipt token found in purchase');
+              set({ error: 'No receipt found', loading: false });
               return;
             }
 
+            console.log('Calling validateReceiptWithBackend...');
+
+            const isValid = await validateReceiptWithBackend(receipt, purchase);
+            console.log('Validation result:', isValid);
+
+            if (!isValid) {
+              console.error('Receipt validation failed');
+              set({ error: 'Receipt validation failed', loading: false });
+              return;
+            }
+
+            console.log('Finishing transaction...');
             // Finish the transaction
             await finishTransaction({ purchase, isConsumable: false });
+            console.log('Transaction finished');
 
             // Verify the purchase and update state
+            console.log('Checking subscription status...');
             await get().checkSubscription();
+            console.log('Subscription check complete');
           } catch (error) {
             console.error('Error finishing transaction:', error);
+            console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
+            set({ error: 'Failed to process purchase', loading: false });
           }
         }
       );
@@ -116,12 +155,15 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
 
   checkSubscription: async () => {
     try {
+      console.log('=== checkSubscription START ===');
       set({ loading: true, error: null });
 
       // First, check database for active subscription (most reliable)
       const {
         data: { user },
       } = await supabase.auth.getUser();
+
+      console.log('User in checkSubscription:', user ? user.id : 'No user');
 
       if (user) {
         // Check for premium access flag
@@ -159,6 +201,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
           console.log('Active subscription found in database:', dbSubscriptions[0]);
           set({
             purchases: [],
+            currentSubscription: dbSubscriptions[0] as Subscription,
             hasActiveSubscription: true,
             hasPremiumAccess: false,
             loading: false,
@@ -182,10 +225,8 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
         console.log('Found device purchases, triggering validation');
         // Validate each purchase with backend
         for (const purchase of subscriptionPurchases) {
-          const receipt =
-            Platform.OS === 'ios'
-              ? (purchase as any).transactionReceipt
-              : (purchase as any).purchaseToken;
+          // In v14, purchaseToken is used for both iOS and Android
+          const receipt = (purchase as any).purchaseToken;
 
           await validateReceiptWithBackend(receipt, purchase);
         }
@@ -202,6 +243,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
         if (updatedSubs && updatedSubs.length > 0) {
           set({
             purchases: subscriptionPurchases,
+            currentSubscription: updatedSubs[0] as Subscription,
             hasActiveSubscription: true,
             hasPremiumAccess: false,
             loading: false,
@@ -211,6 +253,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       }
 
       // No active subscriptions found
+      console.log('No active subscriptions found');
       set({
         purchases: subscriptionPurchases,
         hasActiveSubscription: false,
@@ -218,6 +261,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
         loading: false,
       });
 
+      console.log('=== checkSubscription END: returning false ===');
       return false;
     } catch (error) {
       console.error('Error checking subscription:', error);
@@ -294,7 +338,16 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       });
 
       console.log('Purchase request sent successfully');
+
       // The purchase listener will handle the completion
+      // But also set a timeout to reset loading state if listener doesn't fire
+      setTimeout(() => {
+        const state = get();
+        if (state.loading) {
+          console.warn('Purchase listener did not fire within 10 seconds, resetting loading state');
+          set({ loading: false });
+        }
+      }, 10000);
     } catch (error) {
       console.error('Error purchasing subscription:', error);
       console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');

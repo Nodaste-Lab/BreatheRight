@@ -9,11 +9,13 @@ import { colors } from '@/lib/colors/theme';
 import { GradientBackground } from '@/components/ui/GradientBackground';
 import { useLocationStore } from '../../store/location';
 import { getScheduledNotifications, sendTestNotification } from '../../lib/services/notification-scheduler';
+import { useSubscriptionStore } from '../../store/subscription';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { user, profile, signOut, updateProfile } = useAuthStore();
   const { fetchUserLocations, locations } = useLocationStore();
+  const { hasActiveSubscription, hasPremiumAccess, currentSubscription, restorePurchases } = useSubscriptionStore();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
   const [weatherSourceModalVisible, setWeatherSourceModalVisible] = React.useState(false);
   const [isUpdatingSource, setIsUpdatingSource] = React.useState(false);
@@ -139,6 +141,25 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleManageSubscription = async () => {
+    const url = 'https://apps.apple.com/account/subscriptions';
+    const canOpen = await Linking.canOpenURL(url);
+    if (canOpen) {
+      await Linking.openURL(url);
+    } else {
+      Alert.alert('Error', 'Unable to open subscription management');
+    }
+  };
+
+  const handleRestorePurchases = async () => {
+    try {
+      await restorePurchases();
+      Alert.alert('Success', 'Purchases restored successfully');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to restore purchases');
+    }
+  };
+
   return (
     <GradientBackground>
       <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
@@ -195,6 +216,69 @@ export default function SettingsScreen() {
               </View>
             </TouchableOpacity>
 
+          </Card>
+
+          {/* Subscription */}
+          <Card>
+            <Text style={styles.sectionTitle}>Subscription</Text>
+
+            <View style={styles.subscriptionInfo}>
+              <View style={styles.subscriptionStatus}>
+                <View style={styles.subscriptionStatusLeft}>
+                  <Ionicons
+                    name={hasActiveSubscription || hasPremiumAccess ? "checkmark-circle" : "close-circle"}
+                    size={24}
+                    color={hasActiveSubscription || hasPremiumAccess ? "#10b981" : "#ef4444"}
+                  />
+                  <View style={styles.subscriptionStatusText}>
+                    <Text style={styles.subscriptionStatusTitle}>
+                      {hasActiveSubscription || hasPremiumAccess ? "Active" : "Inactive"}
+                    </Text>
+                    {hasPremiumAccess && (
+                      <Text style={styles.subscriptionStatusSubtitle}>Premium Access</Text>
+                    )}
+                    {hasActiveSubscription && currentSubscription && (
+                      <Text style={styles.subscriptionStatusSubtitle}>
+                        {currentSubscription.product_id === 'AQ_Buddy_Monthly_Subscription' ? 'Monthly Plan' : 'Annual Plan'}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              </View>
+
+              {currentSubscription?.expiresAt && (
+                <View style={styles.subscriptionDetail}>
+                  <Text style={styles.subscriptionDetailLabel}>Expires</Text>
+                  <Text style={styles.subscriptionDetailValue}>
+                    {new Date(currentSubscription.expiresAt).toLocaleDateString()}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {(hasActiveSubscription || hasPremiumAccess) && (
+              <TouchableOpacity
+                style={styles.settingItem}
+                onPress={handleManageSubscription}
+              >
+                <View style={styles.settingLeft}>
+                  <Ionicons name="settings-outline" size={20} color="#491124" />
+                  <Text style={styles.settingLabel}>Manage Subscription</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={handleRestorePurchases}
+            >
+              <View style={styles.settingLeft}>
+                <Ionicons name="refresh-outline" size={20} color="#491124" />
+                <Text style={styles.settingLabel}>Restore Purchases</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+            </TouchableOpacity>
           </Card>
 
           {/* About */}
@@ -512,5 +596,54 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     marginLeft: 8,
     marginVertical: 2,
+  },
+  subscriptionInfo: {
+    marginBottom: 16,
+  },
+  subscriptionStatus: {
+    paddingVertical:4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  subscriptionStatusLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  subscriptionStatusText: {
+    flex: 1,
+  },
+  subscriptionStatusTitle: {
+    fontSize: fonts.headline.h5.fontSize,
+    fontFamily: fonts.headline.h5.fontFamily,
+    fontWeight: fonts.headline.h5.fontWeight as any,
+    lineHeight: 22,
+    color: '#111827',
+  },
+  subscriptionStatusSubtitle: {
+    fontSize: fonts.body.small.fontSize,
+    fontFamily: fonts.body.small.fontFamily,
+    lineHeight: 16,
+    color: '#6b7280',
+  },
+  subscriptionDetail: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  subscriptionDetailLabel: {
+    fontSize: fonts.body.regular.fontSize,
+    fontFamily: fonts.body.regular.fontFamily,
+    fontWeight: fonts.body.regular.fontWeight as any,
+    lineHeight: fonts.body.regular.lineHeight,
+    color: '#6b7280',
+  },
+  subscriptionDetailValue: {
+    fontSize: fonts.body.regular.fontSize,
+    fontWeight: fonts.body.regular.fontWeight as any,
+    lineHeight: fonts.body.regular.lineHeight,
+    color: '#111827',
+    fontFamily: fonts.weight.semibold,
   },
 });

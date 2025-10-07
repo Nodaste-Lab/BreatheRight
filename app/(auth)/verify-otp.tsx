@@ -42,8 +42,8 @@ export default function VerifyOtpScreen() {
   const onSubmit = async (data: OtpForm) => {
     try {
       await verifyOtp(email || '', data.token);
-      // Navigate to main app
-      router.replace('/(tabs)');
+      // Navigate to index route which will check subscription and route appropriately
+      router.replace('/');
     } catch (error: any) {
       Alert.alert(
         'Verification Failed',

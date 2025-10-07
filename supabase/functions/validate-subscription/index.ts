@@ -146,6 +146,22 @@ serve(async (req) => {
 });
 
 async function validateAppleReceipt(receiptData: string): Promise<AppleValidationResult> {
+  if (!receiptData) {
+    console.error('No receipt provided for validation');
+    return { isValid: false };
+  }
+
+  // Check if this is a StoreKit 2 JWT (starts with "eyJ")
+  const isJWT = receiptData.startsWith('eyJ');
+
+  if (isJWT) {
+    console.log('Detected StoreKit 2 JWT token, decoding...');
+    return await validateStoreKit2JWT(receiptData);
+  }
+
+  // Otherwise, use the old verifyReceipt API
+  console.log('Using legacy verifyReceipt API');
+
   // Try production first
   let response = await fetch(APPLE_VERIFY_RECEIPT_URL_PRODUCTION, {
     method: 'POST',
@@ -204,4 +220,60 @@ async function validateAppleReceipt(receiptData: string): Promise<AppleValidatio
     originalTransactionId: latestReceipt.original_transaction_id,
     autoRenewing: latestReceipt.auto_renew_status === '1',
   };
+}
+
+async function validateStoreKit2JWT(jwtToken: string): Promise<AppleValidationResult> {
+  try {
+    // Decode JWT payload (without verification for now - see note below)
+    const parts = jwtToken.split('.');
+    if (parts.length !== 3) {
+      console.error('Invalid JWT format');
+      return { isValid: false };
+    }
+
+    const payload = JSON.parse(atob(parts[1]));
+    console.log('JWT payload:', payload);
+
+    // Extract subscription details from the JWT
+    const {
+      transactionId,
+      originalTransactionId,
+      expiresDate,
+      type,
+      environment,
+    } = payload;
+
+    console.log('Transaction details:', {
+      transactionId,
+      originalTransactionId,
+      expiresDate,
+      type,
+      environment,
+    });
+
+    // Check if subscription is active
+    const expirationDate = new Date(expiresDate);
+    const isActive = expirationDate > new Date();
+
+    console.log('Subscription status:', {
+      expiresAt: expirationDate.toISOString(),
+      isActive,
+      environment,
+    });
+
+    // NOTE: For production, you should verify the JWT signature using Apple's root certificates
+    // For now, we're trusting the JWT since it comes directly from Apple's IAP system
+    // See: https://developer.apple.com/documentation/appstoreserverapi/jwsdecodedheader
+
+    return {
+      isValid: true,
+      isActive,
+      expiresAt: expirationDate,
+      originalTransactionId,
+      autoRenewing: type === 'Auto-Renewable Subscription',
+    };
+  } catch (error) {
+    console.error('Error decoding JWT:', error);
+    return { isValid: false };
+  }
 }

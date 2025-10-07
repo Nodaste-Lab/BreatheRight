@@ -10,10 +10,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   initialize: async () => {
     try {
+      console.log('=== AUTH INITIALIZE START ===');
       set({ loading: true });
-      
+
       const { data: { session } } = await supabase.auth.getSession();
-      
+      console.log('Session in initialize:', session ? 'exists' : 'null');
+      console.log('User in initialize:', session?.user?.id || 'No user');
+
       if (session?.user) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -21,19 +24,23 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           .eq('id', session.user.id)
           .single();
 
+        console.log('Setting user in auth store:', session.user.id);
         set({
           user: session.user,
           profile: profile || null,
           initialized: true,
           loading: false,
         });
+        console.log('=== AUTH INITIALIZE END: User set ===');
       } else {
+        console.log('No session found, setting user to null');
         set({
           user: null,
           profile: null,
           initialized: true,
           loading: false,
         });
+        console.log('=== AUTH INITIALIZE END: No user ===');
       }
     } catch (error) {
       console.error('Auth initialization error:', error);
@@ -251,9 +258,15 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
 // Listen for auth changes
 supabase.auth.onAuthStateChange((event, session) => {
+  console.log('=== AUTH STATE CHANGE ===');
+  console.log('Event:', event);
+  console.log('Session exists:', !!session);
+  console.log('User:', session?.user?.id || 'No user');
+
   const { initialize } = useAuthStore.getState();
-  
+
   if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+    console.log('Calling auth initialize due to', event);
     initialize();
   }
 });
