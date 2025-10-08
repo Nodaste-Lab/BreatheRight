@@ -16,6 +16,14 @@ export default function AlertsScreen() {
   const [showTimePicker, setShowTimePicker] = useState<{ locationId: string; type: 'morning' | 'evening' } | null>(null);
   const [editingName, setEditingName] = useState<{ locationId: string; type: 'morning' | 'evening'; name: string } | null>(null);
 
+  // Format time to 12-hour format with am/pm
+  const formatTime = (time: string): string => {
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'pm' : 'am';
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${minutes.toString().padStart(2, '0')}${period}`;
+  };
+
   // Initialize temp time for picker
   const getCurrentTime = (locationId: string, type: 'morning' | 'evening') => {
     const prefs = getLocationPreferences(locationId);
@@ -128,6 +136,9 @@ export default function AlertsScreen() {
       } else {
         await updateLocationAlerts(locationId, { [field]: name });
       }
+
+      // Refresh preferences after update
+      await fetchAlertPreferences();
       setEditingName(null);
     } catch (error) {
       console.error('Failed to update alert name:', error);
@@ -195,7 +206,7 @@ export default function AlertsScreen() {
                               style={styles.timeButton}
                             >
                               <Text style={styles.alertDescription}>
-                                Daily AI summary at {prefs?.morningReportTime || '08:00'}
+                                Daily AI summary at {formatTime(prefs?.morningReportTime || '08:00')}
                               </Text>
                               <Ionicons name="time-outline" size={14} color="#3b82f6" />
                             </TouchableOpacity>
@@ -235,7 +246,7 @@ export default function AlertsScreen() {
                               style={styles.timeButton}
                             >
                               <Text style={styles.alertDescription}>
-                                Daily summary at {prefs?.eveningReportTime || '18:00'}
+                                Daily summary at {formatTime(prefs?.eveningReportTime || '18:00')}
                               </Text>
                               <Ionicons name="time-outline" size={14} color="#3b82f6" />
                             </TouchableOpacity>

@@ -118,6 +118,8 @@ export const useAlertStore = create<AlertStore>((set, get) => ({
           location_id: locationId,
           ...dbUpdates,
           updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'location_id'
         });
 
       if (error) throw error;
