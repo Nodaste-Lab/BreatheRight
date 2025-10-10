@@ -321,7 +321,7 @@ export default function SettingsScreen() {
 
           {/* Version Info */}
           <View style={styles.versionInfo}>
-            <Text style={styles.versionText}>AQBuddy v1.0.1</Text>
+            <Text style={styles.versionText}>AQBuddy v1.0.2</Text>
             <Text style={styles.versionSubtext}>Made with ❤️ by Nodaste</Text>
           </View>
         </View>
