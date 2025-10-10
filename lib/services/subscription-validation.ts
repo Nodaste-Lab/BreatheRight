@@ -1,6 +1,8 @@
-import { Purchase } from 'react-native-iap';
 import { Platform } from 'react-native';
 import { supabase } from '../supabase/client';
+
+// Import Purchase type conditionally to avoid Expo Go crash
+type Purchase = any;
 
 /**
  * Backend Receipt Validation

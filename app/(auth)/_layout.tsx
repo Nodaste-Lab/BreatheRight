@@ -6,26 +6,27 @@ export default function AuthLayout() {
     <>
       <StatusBar style="dark" />
       <Stack
+        initialRouteName="sign-up"
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: '#FFFFFF' }
         }}
       >
-        <Stack.Screen 
-          name="sign-in" 
-          options={{ title: 'Sign In' }} 
+        <Stack.Screen
+          name="sign-up"
+          options={{ title: 'Sign Up' }}
         />
-        <Stack.Screen 
-          name="sign-up" 
-          options={{ title: 'Sign Up' }} 
+        <Stack.Screen
+          name="sign-in"
+          options={{ title: 'Sign In' }}
         />
-        <Stack.Screen 
-          name="forgot-password" 
-          options={{ title: 'Reset Password' }} 
+        <Stack.Screen
+          name="forgot-password"
+          options={{ title: 'Reset Password' }}
         />
-        <Stack.Screen 
-          name="reset-password" 
-          options={{ title: 'Set New Password' }} 
+        <Stack.Screen
+          name="reset-password"
+          options={{ title: 'Set New Password' }}
         />
       </Stack>
     </>

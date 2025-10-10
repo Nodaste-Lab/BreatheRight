@@ -9,8 +9,10 @@ export default function IndexScreen() {
   const { user, initialized, initialize } = useAuthStore();
   const {
     hasActiveSubscription,
+    hasPremiumAccess,
     initialized: subscriptionInitialized,
     initialize: initializeSubscription,
+    checkSubscription,
   } = useSubscriptionStore();
   const router = useRouter();
   const [showPaywall, setShowPaywall] = useState(false);
@@ -20,12 +22,21 @@ export default function IndexScreen() {
     initializeSubscription();
   }, []);
 
+  // Re-check subscription when user logs in
+  useEffect(() => {
+    if (user && initialized) {
+      console.log('User logged in, checking subscription status...');
+      checkSubscription();
+    }
+  }, [user, initialized]);
+
   useEffect(() => {
     console.log('=== INDEX ROUTING LOGIC ===');
     console.log('initialized:', initialized);
     console.log('subscriptionInitialized:', subscriptionInitialized);
     console.log('user:', user ? 'exists' : 'null');
     console.log('hasActiveSubscription:', hasActiveSubscription);
+    console.log('hasPremiumAccess:', hasPremiumAccess);
 
     if (!initialized || !subscriptionInitialized) {
       console.log('Waiting for initialization...');
@@ -34,24 +45,26 @@ export default function IndexScreen() {
 
     // First check if user is logged in
     if (!user) {
-      // Not logged in - go to sign in
-      console.log('No user - navigating to sign-in');
-      router.replace('/(auth)/sign-in');
+      // Not logged in - go to sign up
+      console.log('No user - navigating to sign-up');
+      router.replace('/(auth)/sign-up');
       return;
     }
 
-    // User is logged in - check subscription status
-    if (!hasActiveSubscription) {
-      // Logged in but no subscription - show paywall
-      console.log('User logged in but no subscription - showing paywall');
+    // User is logged in - check subscription status or premium access
+    const hasAccess = hasActiveSubscription || hasPremiumAccess;
+
+    if (!hasAccess) {
+      // Logged in but no subscription or premium access - show paywall
+      console.log('User logged in but no subscription/premium access - showing paywall');
       setShowPaywall(true);
       return;
     }
 
-    // Logged in with active subscription - go to app
-    console.log('User has subscription - navigating to tabs');
+    // Logged in with active subscription or premium access - go to app
+    console.log('User has access - navigating to tabs');
     router.replace('/(tabs)');
-  }, [user, initialized, hasActiveSubscription, subscriptionInitialized]);
+  }, [user, initialized, hasActiveSubscription, hasPremiumAccess, subscriptionInitialized]);
 
   // Show paywall if subscription is not active
   if (showPaywall) {

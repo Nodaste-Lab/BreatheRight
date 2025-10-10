@@ -30,17 +30,17 @@ const SUBSCRIPTION_OPTIONS: SubscriptionOption[] = [
   {
     id: SUBSCRIPTION_PRODUCTS.monthly,
     name: 'Monthly',
-    price: '$2.99',
+    price: '$0.99',
     period: 'per month',
     description: 'Full access to all features',
   },
   {
     id: SUBSCRIPTION_PRODUCTS.annual,
     name: 'Annual',
-    price: '$29.99',
+    price: '$9.99',
     period: 'per year',
     description: 'Full access to all features',
-    savings: 'Save 17%',
+    savings: 'Save 16%',
   },
 ];
 

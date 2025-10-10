@@ -1,24 +1,45 @@
 import { create } from 'zustand';
-import {
-  initConnection,
-  endConnection,
-  fetchProducts,
-  requestPurchase,
-  purchaseUpdatedListener,
-  purchaseErrorListener,
-  finishTransaction,
-  Purchase,
-  PurchaseError,
-  getAvailablePurchases,
-} from 'react-native-iap';
 import { Platform } from 'react-native';
+import * as Device from 'expo-device';
 import { validateReceiptWithBackend } from '../lib/services/subscription-validation';
 import { supabase } from '../lib/supabase/client';
 
+// Check if running in Expo Go (NitroModules not supported)
+const isExpoGo = typeof global.expo !== 'undefined' && global.expo?.modules?.ExpoGo;
+
+// Conditional imports for IAP (not supported in Expo Go)
+let initConnection: any;
+let endConnection: any;
+let fetchProducts: any;
+let requestPurchase: any;
+let purchaseUpdatedListener: any;
+let purchaseErrorListener: any;
+let finishTransaction: any;
+let getAvailablePurchases: any;
+
+export type Purchase = any;
+export type PurchaseError = any;
+
+if (!isExpoGo) {
+  try {
+    const iap = require('react-native-iap');
+    initConnection = iap.initConnection;
+    endConnection = iap.endConnection;
+    fetchProducts = iap.fetchProducts;
+    requestPurchase = iap.requestPurchase;
+    purchaseUpdatedListener = iap.purchaseUpdatedListener;
+    purchaseErrorListener = iap.purchaseErrorListener;
+    finishTransaction = iap.finishTransaction;
+    getAvailablePurchases = iap.getAvailablePurchases;
+  } catch (error) {
+    console.warn('react-native-iap not available:', error);
+  }
+}
+
 // Subscription product IDs
 export const SUBSCRIPTION_PRODUCTS = {
-  monthly: 'AQ_Buddy_Monthly_Subscription',
-  annual: 'AQ_Buddy_Annual_Subscription',
+  monthly: 'AQ_Buddy_Monthly_Subscription_.99',
+  annual: 'AQ_Buddy_Annual_Subscription_9.99',
 } as const;
 
 const productIds = Object.values(SUBSCRIPTION_PRODUCTS);
@@ -66,6 +87,13 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   initialize: async () => {
     try {
       set({ loading: true, error: null });
+
+      // Skip IAP initialization in Expo Go
+      if (isExpoGo || !initConnection) {
+        console.warn('Skipping IAP initialization - not supported in Expo Go');
+        set({ initialized: true, loading: false });
+        return;
+      }
 
       // Initialize IAP connection
       await initConnection();
@@ -135,13 +163,10 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       (get() as any).purchaseUpdateSubscription = purchaseUpdateSubscription;
       (get() as any).purchaseErrorSubscription = purchaseErrorSubscription;
 
-      // Check for existing subscriptions
-      const hasActive = await get().checkSubscription();
-
+      // Mark as initialized (checkSubscription will be called after user logs in)
       set({
         initialized: true,
         loading: false,
-        hasActiveSubscription: hasActive,
       });
     } catch (error) {
       console.error('Error initializing IAP:', error);
@@ -212,15 +237,21 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
 
       // If no database subscription, check device purchases (fallback)
       // This handles cases where user hasn't validated yet
+      // Skip in Expo Go
+      if (isExpoGo || !getAvailablePurchases) {
+        set({ hasActiveSubscription: false, hasPremiumAccess: false, loading: false });
+        return false;
+      }
+
       const availablePurchases = await getAvailablePurchases();
       console.log('=== AVAILABLE PURCHASES DEBUG ===');
       console.log('Count:', availablePurchases.length);
       console.log('Full data:', JSON.stringify(availablePurchases, null, 2));
-      console.log('Transaction IDs:', availablePurchases.map(p => p.transactionId || (p as any).id));
+      console.log('Transaction IDs:', availablePurchases.map((p: any) => p.transactionId || (p as any).id));
       console.log('================================');
 
       // Filter for our subscription products
-      const subscriptionPurchases = availablePurchases.filter((purchase) =>
+      const subscriptionPurchases = availablePurchases.filter((purchase: any) =>
         productIds.includes(purchase.productId as typeof productIds[number])
       );
 
@@ -283,6 +314,13 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     try {
       set({ loading: true, error: null });
 
+      // Skip in Expo Go
+      if (isExpoGo || !fetchProducts || !requestPurchase) {
+        const errorMessage = 'In-app purchases are not supported in Expo Go. Please test on a real device or via EAS Build.';
+        set({ error: errorMessage, loading: false });
+        throw new Error(errorMessage);
+      }
+
       console.log('Starting purchase for:', productId);
       console.log('fetchProducts available?', typeof fetchProducts);
       console.log('requestPurchase available?', typeof requestPurchase);
@@ -293,7 +331,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
 
       if (!products || products.length === 0) {
         // Check if running in simulator (IAP not available)
-        const isSimulator = Platform.OS === 'ios' && !Platform.isPad && (await import('expo-device')).default.isDevice === false;
+        const isSimulator = Platform.OS === 'ios' && !Platform.isPad && Device.isDevice === false;
 
         if (isSimulator) {
           console.warn('IAP not available in iOS Simulator. Please test on a real device or TestFlight.');
@@ -394,8 +432,10 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       state.purchaseErrorSubscription.remove();
     }
 
-    // End IAP connection
-    endConnection();
+    // End IAP connection (skip in Expo Go)
+    if (!isExpoGo && endConnection) {
+      endConnection();
+    }
   },
 
   isSubscribed: () => {

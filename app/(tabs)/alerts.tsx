@@ -1,20 +1,45 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Switch, TouchableOpacity, Platform, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Switch, TouchableOpacity, Platform, Modal, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../../components/ui/Card';
 import { fonts } from '../../lib/fonts';
 import { GradientBackground } from '@/components/ui/GradientBackground';
 import { useLocationStore } from '../../store/location';
 import { useAlertStore } from '../../store/alerts';
-import type { AlertPreferences } from '../../store/alerts';
+import type { AlertPreferences, CustomAlert } from '../../store/alerts';
 
 
 export default function AlertsScreen() {
   const { locations, fetchUserLocations } = useLocationStore();
-  const { preferences, fetchAlertPreferences, updateLocationAlerts, createDefaultPreferences } = useAlertStore();
+  const {
+    preferences,
+    customAlerts,
+    fetchAlertPreferences,
+    fetchCustomAlerts,
+    updateLocationAlerts,
+    createCustomAlert,
+    updateCustomAlert,
+    deleteCustomAlert,
+    createDefaultPreferences
+  } = useAlertStore();
   const [expandedLocation, setExpandedLocation] = useState<string | null>(null);
   const [showTimePicker, setShowTimePicker] = useState<{ locationId: string; type: 'morning' | 'evening' } | null>(null);
   const [editingName, setEditingName] = useState<{ locationId: string; type: 'morning' | 'evening'; name: string } | null>(null);
+  const [showCustomAlertModal, setShowCustomAlertModal] = useState<{ locationId: string } | null>(null);
+  const [customAlertName, setCustomAlertName] = useState('');
+
+  // Helper function to round time to nearest 15 minutes
+  const getRoundedTime = () => {
+    const now = new Date();
+    const minutes = now.getMinutes();
+    const roundedMinutes = Math.round(minutes / 15) * 15;
+    now.setMinutes(roundedMinutes);
+    now.setSeconds(0);
+    now.setMilliseconds(0);
+    return now;
+  };
+
+  const [customAlertTime, setCustomAlertTime] = useState(getRoundedTime());
 
   // Format time to 12-hour format with am/pm
   const formatTime = (time: string): string => {
@@ -42,11 +67,64 @@ export default function AlertsScreen() {
   useEffect(() => {
     fetchUserLocations();
     fetchAlertPreferences();
+    fetchCustomAlerts();
   }, []);
 
   // Get preferences for a specific location
   const getLocationPreferences = (locationId: string): AlertPreferences | null => {
     return preferences.find(p => p.locationId === locationId) || null;
+  };
+
+  // Get custom alerts for a specific location
+  const getLocationCustomAlerts = (locationId: string): CustomAlert[] => {
+    return customAlerts.filter(a => a.locationId === locationId);
+  };
+
+  // Handle creating a custom alert
+  const handleCreateCustomAlert = async () => {
+    if (!showCustomAlertModal) return;
+    if (!customAlertName.trim()) {
+      Alert.alert('Error', 'Please enter an alert name');
+      return;
+    }
+
+    try {
+      const hours = customAlertTime.getHours().toString().padStart(2, '0');
+      const minutes = customAlertTime.getMinutes().toString().padStart(2, '0');
+      const timeString = `${hours}:${minutes}`;
+
+      await createCustomAlert(showCustomAlertModal.locationId, customAlertName.trim(), timeString);
+
+      // Reset form and close modal
+      setCustomAlertName('');
+      setCustomAlertTime(getRoundedTime());
+      setShowCustomAlertModal(null);
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create custom alert');
+    }
+  };
+
+  // Handle deleting a custom alert
+  const handleDeleteCustomAlert = (alert: CustomAlert) => {
+    Alert.alert(
+      'Delete Custom Alert',
+      `Are you sure you want to delete "${alert.alertName}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteCustomAlert(alert.id);
+              Alert.alert('Success', 'Custom alert deleted');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete custom alert');
+            }
+          },
+        },
+      ]
+    );
   };
 
   // Update time for a location
@@ -259,7 +337,58 @@ export default function AlertsScreen() {
                           thumbColor={prefs?.eveningReportEnabled ? '#ffffff' : '#f3f4f6'}
                         />
                       </View>
-                      
+
+                      {/* Custom Alerts Section */}
+                      <View style={styles.customAlertsSection}>
+                        <View style={styles.customAlertsHeader}>
+                          <Text style={styles.customAlertsTitle}>Custom Alerts</Text>
+                          <TouchableOpacity
+                            style={styles.addAlertButton}
+                            onPress={() => {
+                              setCustomAlertTime(getRoundedTime());
+                              setCustomAlertName('');
+                              setShowCustomAlertModal({ locationId: location.id });
+                            }}
+                          >
+                            <Ionicons name="add-circle-outline" size={24} color="#3b82f6" />
+                          </TouchableOpacity>
+                        </View>
+
+                        {getLocationCustomAlerts(location.id).map((alert) => (
+                          <View key={alert.id} style={styles.customAlertItem}>
+                            <View style={styles.alertItemLeft}>
+                              <Ionicons name="notifications-outline" size={20} color="#8b5cf6" />
+                              <View style={styles.alertText}>
+                                <Text style={styles.alertName}>{alert.alertName}</Text>
+                                <Text style={styles.alertDescription}>
+                                  AI summary at {formatTime(alert.alertTime)}
+                                </Text>
+                              </View>
+                            </View>
+                            <View style={styles.customAlertActions}>
+                              <Switch
+                                value={alert.enabled}
+                                onValueChange={(value) => updateCustomAlert(alert.id, { enabled: value })}
+                                trackColor={{ false: '#e5e7eb', true: '#3b82f6' }}
+                                thumbColor={alert.enabled ? '#ffffff' : '#f3f4f6'}
+                              />
+                              <TouchableOpacity
+                                style={styles.deleteAlertButton}
+                                onPress={() => handleDeleteCustomAlert(alert)}
+                              >
+                                <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        ))}
+
+                        {getLocationCustomAlerts(location.id).length === 0 && (
+                          <Text style={styles.noCustomAlertsText}>
+                            No custom alerts. Tap + to create one!
+                          </Text>
+                        )}
+                      </View>
+
                     </View>
                   )}
                 </Card>
@@ -410,6 +539,101 @@ export default function AlertsScreen() {
                     onPress={() => updateAlertName(editingName.locationId, editingName.type, editingName.name)}
                   >
                     <Text style={styles.saveButtonText}>Save</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
+        )}
+
+        {/* Create Custom Alert Modal */}
+        {showCustomAlertModal && (
+          <Modal
+            transparent
+            visible={!!showCustomAlertModal}
+            animationType="fade"
+            onRequestClose={() => setShowCustomAlertModal(null)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.editNameModal}>
+                <Text style={styles.editNameTitle}>Create Custom Alert</Text>
+
+                <Text style={styles.inputLabel}>Alert Name</Text>
+                <TextInput
+                  style={styles.nameInput}
+                  value={customAlertName}
+                  onChangeText={setCustomAlertName}
+                  placeholder="e.g., Before Walk, After Workout"
+                  placeholderTextColor="#9ca3af"
+                  autoFocus
+                  maxLength={50}
+                />
+
+                <Text style={styles.inputLabel}>Alert Time</Text>
+                <View style={styles.timePickerContainer}>
+                  <Text style={styles.timeDisplay}>
+                    {customAlertTime.toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true
+                    })}
+                  </Text>
+                  <View style={styles.timeControls}>
+                    <TouchableOpacity
+                      style={styles.timeControlButton}
+                      onPress={() => {
+                        const newTime = new Date(customAlertTime);
+                        newTime.setHours(newTime.getHours() - 1);
+                        setCustomAlertTime(newTime);
+                      }}
+                    >
+                      <Text style={styles.timeButtonText}>-1h</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.timeControlButton}
+                      onPress={() => {
+                        const newTime = new Date(customAlertTime);
+                        newTime.setMinutes(newTime.getMinutes() - 15);
+                        setCustomAlertTime(newTime);
+                      }}
+                    >
+                      <Text style={styles.timeButtonText}>-15m</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.timeControlButton}
+                      onPress={() => {
+                        const newTime = new Date(customAlertTime);
+                        newTime.setMinutes(newTime.getMinutes() + 15);
+                        setCustomAlertTime(newTime);
+                      }}
+                    >
+                      <Text style={styles.timeButtonText}>+15m</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.timeControlButton}
+                      onPress={() => {
+                        const newTime = new Date(customAlertTime);
+                        newTime.setHours(newTime.getHours() + 1);
+                        setCustomAlertTime(newTime);
+                      }}
+                    >
+                      <Text style={styles.timeButtonText}>+1h</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.editNameButtons}>
+                  <TouchableOpacity
+                    style={[styles.editNameButton, styles.cancelButton]}
+                    onPress={() => setShowCustomAlertModal(null)}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.editNameButton, styles.saveButton]}
+                    onPress={handleCreateCustomAlert}
+                  >
+                    <Text style={styles.saveButtonText}>Create</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -654,5 +878,55 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: 'white',
+  },
+  customAlertsSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+  },
+  customAlertsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  customAlertsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  addAlertButton: {
+    padding: 4,
+  },
+  customAlertItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f9fafb',
+  },
+  customAlertActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  deleteAlertButton: {
+    padding: 4,
+  },
+  noCustomAlertsText: {
+    fontSize: 14,
+    color: '#9ca3af',
+    textAlign: 'center',
+    paddingVertical: 16,
+    fontStyle: 'italic',
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+    marginTop: 12,
   },
 });
