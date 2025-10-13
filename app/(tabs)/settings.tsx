@@ -239,7 +239,11 @@ export default function SettingsScreen() {
                     )}
                     {hasActiveSubscription && currentSubscription && (
                       <Text style={styles.subscriptionStatusSubtitle}>
-                        {currentSubscription.product_id === 'AQ_Buddy_Monthly_Subscription' ? 'Monthly Plan' : 'Annual Plan'}
+                        {currentSubscription.product_id === 'AQ_Buddy_Monthly_Subscription_.99'
+                          ? 'Monthly Plan'
+                          : currentSubscription.product_id === 'AQ_Buddy_Annual_Subscription_9.99'
+                            ? 'Annual Plan'
+                            : 'Subscription'}
                       </Text>
                     )}
                   </View>
@@ -321,7 +325,7 @@ export default function SettingsScreen() {
 
           {/* Version Info */}
           <View style={styles.versionInfo}>
-            <Text style={styles.versionText}>AQBuddy v1.0.2</Text>
+            <Text style={styles.versionText}>AQBuddy v1.0.3</Text>
             <Text style={styles.versionSubtext}>Made with ❤️ by Nodaste</Text>
           </View>
         </View>
