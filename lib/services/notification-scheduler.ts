@@ -395,12 +395,9 @@ export async function scheduleCustomAlert(
     // Import the general alert generation function
     const { generateAlert } = await import('./openai-alerts');
 
-    // Determine alert type based on time (for caching purposes)
-    // If time is before noon, treat as 'morning', otherwise 'evening'
-    const alertType = hours < 12 ? 'morning' : 'evening';
-
-    // Generate AI alert with custom name
-    const alertMessage = await generateAlert(currentLocation, alertType, alertName);
+    // Use 'custom' type for user-defined alerts since they can be at any time
+    // This ensures the AI generates time-neutral content focused on the custom alert name
+    const alertMessage = await generateAlert(currentLocation, 'custom', alertName);
 
     // Schedule daily at specified time with pre-generated content
     const trigger: Notifications.DailyTriggerInput = {

@@ -15,7 +15,7 @@ import type { LocationData } from '../../types/location';
 import { supabase } from '../supabase/client';
 
 // Alert types for different times of day
-export type AlertType = 'morning' | 'evening';
+export type AlertType = 'morning' | 'evening' | 'custom';
 
 // Cache key structure for alert caching
 interface AlertCacheKey {
@@ -165,14 +165,25 @@ function generateAlertPrompt(locationData: LocationData, alertType: AlertType, c
     conditions.push(`Smoke: ${wildfire.smokeRisk.level}`);
   }
 
-  const alertName = customAlertName || (alertType === 'morning' ? 'Morning Report' : 'Evening Report');
-  const timeContext = alertType === 'morning'
-    ? 'starting your day'
-    : 'wrapping up your day';
+  const alertName = customAlertName || (alertType === 'morning' ? 'Morning Report' : alertType === 'evening' ? 'Evening Report' : 'Air Quality Update');
 
-  const focusArea = alertType === 'morning'
-    ? 'outdoor planning and activities ahead'
-    : 'reflection on today and preparation for tomorrow';
+  let timeContext: string;
+  let focusArea: string;
+  let focusDetails: string;
+
+  if (alertType === 'custom') {
+    timeContext = 'checking in';
+    focusArea = 'current conditions and actionable advice';
+    focusDetails = 'Focus: Provide helpful insights based on current air quality, pollen, and weather conditions';
+  } else if (alertType === 'morning') {
+    timeContext = 'starting your day';
+    focusArea = 'outdoor planning and activities ahead';
+    focusDetails = 'Focus: Help plan outdoor activities, commute, exercise';
+  } else {
+    timeContext = 'wrapping up your day';
+    focusArea = 'reflection on today and preparation for tomorrow';
+    focusDetails = 'Focus: Summarize the day, suggest tomorrow preparation';
+  }
 
   return `Generate a concise air quality alert titled "${alertName}" for ${location.name} for someone ${timeContext}.
 
@@ -186,10 +197,7 @@ Requirements:
 - Use friendly, encouraging tone
 - Match the tone/theme of the alert name "${alertName}"
 
-${alertType === 'morning' ?
-  'Focus: Help plan outdoor activities, commute, exercise' :
-  'Focus: Summarize the day, suggest tomorrow preparation'
-}
+${focusDetails}
 
 Tone:
 - Silly
@@ -210,9 +218,13 @@ async function callOpenAIForAlert(prompt: string, alertType: AlertType): Promise
   
   if (!OPENAI_API_KEY) {
     console.warn('OpenAI API key not found, using fallback alert');
-    return alertType === 'morning' 
-      ? "Good morning! Check today's air quality before heading out. Stay informed, stay healthy! 🌅"
-      : "Evening air quality update: Review today's conditions and plan for tomorrow. Sweet dreams! 🌙";
+    if (alertType === 'morning') {
+      return "Good morning! Check today's air quality before heading out. Stay informed, stay healthy! 🌅";
+    } else if (alertType === 'evening') {
+      return "Evening air quality update: Review today's conditions and plan for tomorrow. Sweet dreams! 🌙";
+    } else {
+      return "Air quality update: Current conditions available. Check your AQI and plan accordingly! 🌤️";
+    }
   }
 
   try {
@@ -251,16 +263,27 @@ async function callOpenAIForAlert(prompt: string, alertType: AlertType): Promise
       return content.substring(0, 175) + '...';
     }
     
-    return content || (alertType === 'morning' 
-      ? "Good morning! Check air quality before outdoor activities today. 🌅"
-      : "Evening update: Air quality stable. Plan ahead for tomorrow! 🌙");
+    if (!content) {
+      if (alertType === 'morning') {
+        return "Good morning! Check air quality before outdoor activities today. 🌅";
+      } else if (alertType === 'evening') {
+        return "Evening update: Air quality stable. Plan ahead for tomorrow! 🌙";
+      } else {
+        return "Air quality update: Check current conditions and stay informed! 🌤️";
+      }
+    }
+    return content;
     
   } catch (error) {
     console.error('Error calling OpenAI API for alert:', error);
     // Fallback messages
-    return alertType === 'morning' 
-      ? "Morning air quality check: Review conditions before outdoor activities. Have a great day! ☀️"
-      : "Evening air quality summary: Today's conditions logged. Rest well and plan for tomorrow! 🌙";
+    if (alertType === 'morning') {
+      return "Morning air quality check: Review conditions before outdoor activities. Have a great day! ☀️";
+    } else if (alertType === 'evening') {
+      return "Evening air quality summary: Today's conditions logged. Rest well and plan for tomorrow! 🌙";
+    } else {
+      return "Air quality check: Current conditions available. Review and plan your activities! 🌤️";
+    }
   }
 }
 

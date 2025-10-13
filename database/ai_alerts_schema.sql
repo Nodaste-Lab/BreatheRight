@@ -1,5 +1,5 @@
 -- AI Alerts Cache Table
--- Stores OpenAI-generated morning and evening alert messages
+-- Stores OpenAI-generated morning, evening, and custom alert messages
 -- Shared across all users to minimize API costs
 
 CREATE TABLE ai_alerts (
@@ -10,7 +10,7 @@ CREATE TABLE ai_alerts (
   location_id uuid REFERENCES locations(id) ON DELETE CASCADE,
   
   -- Alert metadata
-  alert_type text NOT NULL CHECK (alert_type IN ('morning', 'evening')),
+  alert_type text NOT NULL CHECK (alert_type IN ('morning', 'evening', 'custom')),
   message text NOT NULL,
   
   -- Caching parameters (for fuzzy matching)
@@ -70,9 +70,9 @@ CREATE POLICY "Allow authenticated users to update AI alert access" ON ai_alerts
   FOR UPDATE USING (auth.role() = 'authenticated');
 
 -- Comments for documentation
-COMMENT ON TABLE ai_alerts IS 'Cached OpenAI-generated alert messages for morning and evening reports';
+COMMENT ON TABLE ai_alerts IS 'Cached OpenAI-generated alert messages for morning, evening, and custom reports';
 COMMENT ON COLUMN ai_alerts.cache_key IS 'Unique identifier: locationId-alertType-weatherSource-aqiLevel-pollenLevel-lightningLevel-cacheDate';
-COMMENT ON COLUMN ai_alerts.alert_type IS 'Type of alert: morning (day planning) or evening (summary/prep)';
+COMMENT ON COLUMN ai_alerts.alert_type IS 'Type of alert: morning (day planning), evening (summary/prep), or custom (user-defined time)';
 COMMENT ON COLUMN ai_alerts.message IS 'Generated alert message under 178 characters for push notifications';
 COMMENT ON COLUMN ai_alerts.aqi_level IS 'Rounded AQI value (nearest 5) for fuzzy matching';
 COMMENT ON COLUMN ai_alerts.pollen_level IS 'Rounded pollen index (nearest 2) for fuzzy matching';
@@ -82,3 +82,4 @@ COMMENT ON COLUMN ai_alerts.cache_date IS 'Date-based cache expiration (alerts e
 -- Example cache keys:
 -- 'uuid123-morning-microsoft-50-4-20-2025-01-15'
 -- 'uuid456-evening-airnow-100-6-30-2025-01-15'
+-- 'uuid789-custom-google-75-8-10-2025-01-15'
